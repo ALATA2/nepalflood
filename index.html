@@ -437,11 +437,15 @@
         let currentStage = 1;
         let prevStage = 1;
         
-        // Falling rocks variables (Stage 3)
+        // Falling rocks variables (Stage 3) - Upgraded to Meteorites!
         const fallingRocks = [];
         let rockSpawnTimer = 0.0;
-        const rockGeom = new THREE.DodecahedronGeometry(0.32);
-        const rockMat = new THREE.MeshStandardMaterial({ color: 0x5a504a, roughness: 0.9 });
+        const rockGeom = new THREE.DodecahedronGeometry(0.36);
+        const rockMat = new THREE.MeshStandardMaterial({
+            color: 0xff3300,
+            emissive: 0xcc2200,
+            roughness: 0.7
+        });
 
         // Water splash particles (Submersion)
         const waterSplashParticles = [];
@@ -1111,6 +1115,21 @@
         searchlight.castShadow = false;
         helicopter.add(searchlight);
 
+        // Volumetric Searchlight Beam Cone
+        const beamGeom = new THREE.ConeGeometry(0.7, 7.5, 10, 1, true);
+        beamGeom.translate(0, -3.75, 0); // shift to tip pivot
+        beamGeom.rotateZ(-0.4); // align down-forward
+        const beamMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.16,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide
+        });
+        const searchlightBeamMesh = new THREE.Mesh(beamGeom, beamMat);
+        searchlightBeamMesh.position.set(1.1, -0.2, 0);
+        helicopter.add(searchlightBeamMesh);
+
         const searchlightTarget = new THREE.Object3D();
         searchlightTarget.position.set(4, -6, 0); 
         helicopter.add(searchlightTarget);
@@ -1201,9 +1220,189 @@
             });
         }
 
+        // 7. Obstacles (Drones and Birds) - Drone removed by request, only bird remains
+        const obstacles = [];
+        const obstacleTypes = ['bird'];
+
+        // Exhaust Fire/Smoke Particles
+        const exhaustParticles = [];
+        const exhaustGeom = new THREE.BoxGeometry(0.06, 0.06, 0.06);
+
+        function spawnExhaustParticle(zOffset) {
+            const isSmoke = Math.random() < 0.6;
+            const color = isSmoke ? 0x888888 : (Math.random() < 0.5 ? 0xff4500 : 0xffaa00);
+            const mat = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: isSmoke ? 0.4 : 0.8
+            });
+            const mesh = new THREE.Mesh(exhaustGeom, mat);
+            const px = helicopter.position.x - 1.0;
+            const py = helicopter.position.y + 0.4 + (Math.random() - 0.5) * 0.15;
+            mesh.position.set(px, py, zOffset + (Math.random() - 0.5) * 0.08);
+            scene.add(mesh);
+            exhaustParticles.push({
+                mesh: mesh,
+                vx: -currentScrollSpeed - (2.0 + Math.random() * 3.0),
+                vy: 0.2 + Math.random() * 0.5,
+                life: 0.45
+            });
+        }
+
+        function updateExhaustParticles(dt) {
+            for (let i = exhaustParticles.length - 1; i >= 0; i--) {
+                const p = exhaustParticles[i];
+                p.mesh.position.x += p.vx * dt;
+                p.mesh.position.y += p.vy * dt;
+                p.life -= dt;
+                p.mesh.scale.setScalar(Math.max(0, p.life / 0.45));
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    exhaustParticles.splice(i, 1);
+                }
+            }
+        }
+
+        // Meteorite burning smoke/fire trails
+        const meteoriteTrails = [];
+        const trailGeom = new THREE.BoxGeometry(0.08, 0.08, 0.08);
+
+        function spawnMeteoriteTrail(x, y, z) {
+            const mat = new THREE.MeshBasicMaterial({
+                color: Math.random() < 0.5 ? 0xff4500 : 0xffcc00,
+                transparent: true,
+                opacity: 0.85
+            });
+            const mesh = new THREE.Mesh(trailGeom, mat);
+            mesh.position.set(x + (Math.random() - 0.5) * 0.15, y + (Math.random() - 0.5) * 0.15, z);
+            scene.add(mesh);
+            meteoriteTrails.push({
+                mesh: mesh,
+                vx: (Math.random() - 0.5) * 0.5,
+                vy: 1.0 + Math.random() * 2.0,
+                life: 0.35
+            });
+        }
+
+        function updateMeteoriteTrails(dt) {
+            for (let i = meteoriteTrails.length - 1; i >= 0; i--) {
+                const p = meteoriteTrails[i];
+                p.mesh.position.x += p.vx * dt;
+                p.mesh.position.y += p.vy * dt;
+                p.life -= dt;
+                p.mesh.scale.setScalar(Math.max(0, p.life / 0.35));
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    meteoriteTrails.splice(i, 1);
+                }
+            }
+        }
+
+        // Volcanic Ash/Ember Particles (Stage 5 Inferno)
+        const ashParticles = [];
+        const ashGeom = new THREE.BoxGeometry(0.04, 0.04, 0.04);
+        const ashMat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.9 });
+
+        function spawnAshParticle() {
+            const mesh = new THREE.Mesh(ashGeom, ashMat);
+            mesh.position.set(16.0, 1.5 + Math.random() * 7.0, (Math.random() - 0.5) * 4.0);
+            scene.add(mesh);
+            ashParticles.push({
+                mesh: mesh,
+                vx: -currentScrollSpeed - (1.0 + Math.random() * 2.0),
+                vy: (Math.random() - 0.5) * 0.4,
+                life: 3.5
+            });
+        }
+
+        function updateAshParticles(dt) {
+            if (currentStage === 5 && Math.random() < 0.15 && ashParticles.length < 30) {
+                spawnAshParticle();
+            }
+            for (let i = ashParticles.length - 1; i >= 0; i--) {
+                const p = ashParticles[i];
+                p.mesh.position.x += p.vx * dt;
+                p.mesh.position.y += p.vy * dt;
+                p.life -= dt;
+                if (p.life <= 0 || p.mesh.position.x < -16.0) {
+                    scene.remove(p.mesh);
+                    ashParticles.splice(i, 1);
+                }
+            }
+        }
+
+        // 3D Spiked Mace Pendulum builder (Stage 2)
+        function buildSpikedMaceMesh(length) {
+            const group = new THREE.Group();
+            
+            // Chain
+            const chainGeom = new THREE.CylinderGeometry(0.02, 0.02, length, 5);
+            chainGeom.translate(0, -length / 2, 0); // shift to top pivot
+            const chain = new THREE.Mesh(chainGeom, metalDark);
+            chain.castShadow = true;
+            group.add(chain);
+            
+            // Spiked Ball Group
+            const ballGroup = new THREE.Group();
+            ballGroup.position.set(0, -length, 0);
+            
+            const ballGeom = new THREE.SphereGeometry(0.35, 8, 8);
+            const ball = new THREE.Mesh(ballGeom, metalDark);
+            ball.castShadow = true;
+            ballGroup.add(ball);
+            
+            // Spikes pointing outward
+            const spikeGeom = new THREE.ConeGeometry(0.08, 0.22, 4);
+            spikeGeom.rotateX(Math.PI / 2);
+            spikeGeom.translate(0, 0, 0.35);
+            
+            const directions = [
+                [1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0],
+                [0, 0, 1], [0, 0, -1], [0.7, 0.7, 0], [-0.7, -0.7, 0]
+            ];
+            
+            directions.forEach(dir => {
+                const spike = new THREE.Mesh(spikeGeom.clone(), metalDark);
+                const dirVec = new THREE.Vector3(dir[0], dir[1], dir[2]).normalize();
+                spike.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dirVec);
+                ballGroup.add(spike);
+            });
+            
+            group.add(ballGroup);
+            return { group: group, ballMesh: ball };
+        }
+
+        // Prince of Persia Scissor Blades (Stage 4)
+        function buildScissorBladeMesh() {
+            const group = new THREE.Group();
+            
+            const bladeGeom = new THREE.ConeGeometry(0.4, 3.8, 4);
+            bladeGeom.rotateX(Math.PI); // point down
+            
+            const bladeMat = new THREE.MeshStandardMaterial({
+                color: 0x95a5a6, // Shiny steel
+                metalness: 0.95,
+                roughness: 0.05
+            });
+            
+            const topBlade = new THREE.Mesh(bladeGeom, bladeMat);
+            topBlade.position.set(0, 10.0, 0); // open position
+            topBlade.castShadow = true;
+            group.add(topBlade);
+            
+            const bottomBlade = new THREE.Mesh(bladeGeom.clone(), bladeMat);
+            bottomBlade.rotation.z = Math.PI; // point up
+            bottomBlade.position.set(0, 0.0, 0); // open position
+            bottomBlade.castShadow = true;
+            group.add(bottomBlade);
+            
+            scene.add(group);
+            return { group: group, topBlade: topBlade, bottomBlade: bottomBlade };
+        }
+
         // 7. Obstacles (Drones and Birds)
         const obstacles = [];
-        const obstacleTypes = ['drone', 'bird'];
+        const obstacleTypes = ['bird'];
         function buildObstacleMesh(type) {
             const group = new THREE.Group();
             
@@ -1524,14 +1723,17 @@
 
         // 10. Water Splash Particles
         function spawnWaterSplashParticle(waterTopY) {
-            const p = new THREE.Mesh(splashGeom, splashMat);
+            const isLava = (currentStage === 5);
+            const color = isLava ? (Math.random() < 0.5 ? 0xff3300 : 0xffaa00) : 0xaaccff;
+            const mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.85 });
+            const p = new THREE.Mesh(splashGeom, mat);
             p.position.set(helicopterX + (Math.random() - 0.5) * 1.5, waterTopY, (Math.random() - 0.5) * 0.8);
             scene.add(p);
 
             waterSplashParticles.push({
                 mesh: p,
                 vx: -currentScrollSpeed - (1.0 + Math.random() * 2.0),
-                vy: 1.5 + Math.random() * 2.0,
+                vy: isLava ? (2.2 + Math.random() * 3.5) : (1.5 + Math.random() * 2.0),
                 vz: (Math.random() - 0.5) * 1.0,
                 life: 0.6
             });
@@ -1714,6 +1916,15 @@
             coinsArray.forEach(c => scene.remove(c.mesh));
             coinsArray.length = 0;
 
+            exhaustParticles.forEach(p => scene.remove(p.mesh));
+            exhaustParticles.length = 0;
+
+            meteoriteTrails.forEach(p => scene.remove(p.mesh));
+            meteoriteTrails.length = 0;
+
+            ashParticles.forEach(p => scene.remove(p.mesh));
+            ashParticles.length = 0;
+
             document.getElementById('nepal-flood-stage-banner').style.display = 'none';
 
             // Reset terrain blocks positions, heights, colors, and hide ceilings
@@ -1731,6 +1942,15 @@
                 b.dirtMesh.scale.y = newDirtHeight;
                 b.dirtMesh.position.set(x, newDirtHeight / 2, 0);
                 b.grassMesh.position.set(x, newDirtHeight + 0.15, 0);
+                
+                if (b.spikedMace) {
+                    scene.remove(b.spikedMace.group);
+                    b.spikedMace = null;
+                }
+                if (b.scissorBlade) {
+                    scene.remove(b.scissorBlade.group);
+                    b.scissorBlade = null;
+                }
                 
                 if (b.ceilingMesh) {
                     b.ceilingMesh.visible = false;
@@ -1902,10 +2122,25 @@
             const dt = Math.min(clock.getDelta(), 0.1); 
             const time = clock.getElapsedTime();
 
-            // 1. Water waves animation & Surge offsets
+            // 1. Water waves animation & Surge offsets (swell for ocean Stage 7)
             currentWaterYOffset = THREE.MathUtils.lerp(currentWaterYOffset, targetWaterYOffset, 0.05);
-            waterMesh.position.y = -0.25 + currentWaterYOffset + Math.sin(time * 1.7) * 0.16;
+            let waveHeight = Math.sin(time * 1.7) * 0.16;
+            if (currentStage === 7) {
+                waveHeight = Math.sin(time * 2.2) * 0.52; // Massive sea waves!
+            }
+            waterMesh.position.y = -0.25 + currentWaterYOffset + waveHeight;
             waterMesh.rotation.z = Math.sin(time * 0.8) * 0.012;
+
+            // Lava river (Stage 5) color shifting
+            if (currentStage === 5) {
+                waterMat.color.setHex(0xff3300);
+                waterMat.emissive.setHex(0x990000);
+                waterMat.opacity = 0.95;
+            } else {
+                waterMat.color.setHex(0x4a3e31); // Muddy silt brown
+                waterMat.emissive.setHex(0x000000);
+                waterMat.opacity = 0.85;
+            }
 
             // 2. Wave shape updates & Foam spheres rotation
             currentWaveX = THREE.MathUtils.lerp(currentWaveX, targetWaveX, 0.05);
@@ -1928,6 +2163,9 @@
             updateRescueParticles(dt);
             updateWaveSpray(dt);
             updateWaterSplashParticles(dt);
+            updateExhaustParticles(dt);
+            updateMeteoriteTrails(dt);
+            updateAshParticles(dt);
 
             if (gameState === 'START') {
                 // Helicopter hovering in place on the left side
@@ -1964,6 +2202,10 @@
             } else if (gameState === 'PLAYING') {
                 gameElapsedTime += dt;
 
+                // Spawn exhaust particles from engine ports
+                spawnExhaustParticle(-0.22);
+                spawnExhaustParticle(0.22);
+
                 // Define separated hitboxes for fair arcade game feel
                 const hazardCenter = new THREE.Vector3(helicopter.position.x + 0.15, helicopter.position.y + 0.05, 0);
                 const hazardSize = new THREE.Vector3(1.7, 0.70, 1.0); // Tight cabin only, excludes long tail boom
@@ -1980,22 +2222,41 @@
                     currentStage = 2;
                 } else if (distanceTraveled < 920) {
                     currentStage = 2.5; // Gold Tunnel Bonus Stage!
-                } else {
+                } else if (distanceTraveled < 1400) {
                     currentStage = 3;
+                } else if (distanceTraveled < 1900) {
+                    currentStage = 4;
+                } else if (distanceTraveled < 2400) {
+                    currentStage = 5;
+                } else if (distanceTraveled < 2900) {
+                    currentStage = 6;
+                } else {
+                    currentStage = 7;
                 }
 
                 if (currentStage !== prevStage) {
                     prevStage = currentStage;
                     if (currentStage === 2) {
-                        showStageBanner("STAGE 2: ROCKY CAVES", "WATCH THE ROOF! DANGER OF CEILING COLLISIONS!");
+                        showStageBanner("STAGE 2: ROCKY CAVES", "SWINGING SPIKED MACES SPOTTED! WATCH QUOTAS!");
                     } else if (currentStage === 2.5) {
                         showStageBanner("BONUS STAGE: GOLD TUNNEL", "COLLECT COINS FOR +2s EACH! NO HAZARDS!");
                     } else if (currentStage === 3) {
-                        showStageBanner("STAGE 3: ROCKSLIDE PASS", "WARNING: JAGGED CANYON PEAKS & FALLING ROCKS!");
+                        showStageBanner("STAGE 3: METEORITE PASS", "WARNING: DODGE SCATTERED METEORITE IMPACTS!");
                         // Hide ceiling meshes when leaving caves
                         terrainBlocks.forEach(b => {
                             if (b.ceilingMesh) b.ceilingMesh.visible = false;
                         });
+                    } else if (currentStage === 4) {
+                        showStageBanner("STAGE 4: STEEL TUNNEL", "SCISSOR BLADES SNAPPING CLOSED! TIMING IS KEY!");
+                    } else if (currentStage === 5) {
+                        showStageBanner("STAGE 5: INFERNO CANYON", "DANGER: LAVA RIVER DETECTED! HEAVY THERMAL DRAG!");
+                        terrainBlocks.forEach(b => {
+                            if (b.ceilingMesh) b.ceilingMesh.visible = false;
+                        });
+                    } else if (currentStage === 6) {
+                        showStageBanner("STAGE 6: FLOODED CITY", "PILOT: MANEUVER BETWEEN DENSE SKYSCRAPERS!");
+                    } else if (currentStage === 7) {
+                        showStageBanner("STAGE 7: OCEAN ESTUARY", "OCEAN STORM ACTIVE! PREPARE FOR GIANT WAVES!");
                     }
                 }
 
@@ -2012,9 +2273,21 @@
                     } else if (currentStage === 2.5) {
                         targetSky = new THREE.Color(0x241d13); // dark gold-brown cave
                         targetLight = new THREE.Color(0x8c7855); // golden ambient glow
+                    } else if (currentStage === 3) {
+                        targetSky = new THREE.Color(0x3d271e); // dusty ash orange-grey
+                        targetLight = new THREE.Color(0x8c6d5c);
+                    } else if (currentStage === 4) {
+                        targetSky = new THREE.Color(0x1e272c); // metallic steel-blue/grey
+                        targetLight = new THREE.Color(0x647a88);
+                    } else if (currentStage === 5) {
+                        targetSky = new THREE.Color(0x1a0505); // volcanic pitch black-red
+                        targetLight = new THREE.Color(0x992200); // intense red light
+                    } else if (currentStage === 6) {
+                        targetSky = new THREE.Color(0x2c3540); // cloudy city evening blue
+                        targetLight = new THREE.Color(0x738396);
                     } else {
-                        targetSky = new THREE.Color(0x594c44); // Sunset dusty orange-brown
-                        targetLight = new THREE.Color(0x948275);
+                        targetSky = new THREE.Color(0x1a334d); // stormy oceanic dark-blue
+                        targetLight = new THREE.Color(0x547599);
                     }
                     scene.fog.color.lerp(targetSky, 0.05);
                     renderer.setClearColor(scene.fog.color, 1);
@@ -2039,8 +2312,9 @@
                     // Apply heavy water drag (50% speed reduction)
                     currentScrollSpeed *= 0.5;
                     
-                    // Extra time drainage penalty (timer drains at 1.8x speed)
-                    timer -= 0.8 * dt;
+                    // Extra time drainage penalty (timer drains at 1.8x speed in mud, 2.6x in lava)
+                    const extraDrain = (currentStage === 5) ? 1.6 : 0.8;
+                    timer -= extraDrain * dt;
 
                     // Generate water splash particles
                     if (Math.random() < 0.45) {
@@ -2104,6 +2378,90 @@
                     if (block.ceilingMesh) {
                         block.ceilingMesh.position.x = block.x;
                     }
+
+                    // 1. Spiked Mace Swing & Collision Update (Stage 2)
+                    if (block.spikedMace) {
+                        block.spikedMace.group.position.x = block.x;
+                        const angle = Math.sin(time * block.spikedMace.speed + block.spikedMace.phase) * 0.9;
+                        block.spikedMace.group.rotation.x = angle;
+                        
+                        if (gameState === 'PLAYING' && !isInvincible) {
+                            const ballWorldPos = new THREE.Vector3();
+                            block.spikedMace.ballMesh.getWorldPosition(ballWorldPos);
+                            
+                            const ballSphere = new THREE.Sphere(ballWorldPos, 0.48);
+                            if (heliHazardBox.intersectsSphere(ballSphere)) {
+                                timer -= 3.0;
+                                if (timer < 0) timer = 0;
+                                rescueStreak = 0;
+                                document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
+                                isInvincible = true;
+                                invincibilityTimer = 1.2;
+                                triggerScreenFlash();
+                                createWorldToast('-3s SPIKED MACE', '#ff3333', ballWorldPos.x, ballWorldPos.y);
+                                Sound.playDamage();
+                                if (navigator.vibrate) {
+                                    navigator.vibrate([100, 50, 100]);
+                                }
+                                verticalVelocity = -3.0; // bounce down
+                            }
+                        }
+                    }
+
+                    // 2. Prince of Persia Scissor Blades Update & Collision (Stage 4)
+                    if (block.scissorBlade) {
+                        block.scissorBlade.group.position.x = block.x;
+                        
+                        const cycle = (time + block.scissorBlade.speedOffset) % 2.5; // 2.5s cycle
+                        let topY = 10.0;
+                        let botY = 0.0;
+                        
+                        if (cycle < 0.2) {
+                            // Snap closing: lerp open to closed
+                            const t = cycle / 0.2;
+                            topY = THREE.MathUtils.lerp(10.0, 6.4, t);
+                            botY = THREE.MathUtils.lerp(0.0, 3.6, t);
+                        } else if (cycle < 0.6) {
+                            // Closed hold
+                            topY = 6.4;
+                            botY = 3.6;
+                        } else if (cycle < 2.2) {
+                            // Slow retracting open
+                            const t = (cycle - 0.6) / 1.6;
+                            topY = THREE.MathUtils.lerp(6.4, 10.0, t);
+                            botY = THREE.MathUtils.lerp(3.6, 0.0, t);
+                        } else {
+                            // Stay open
+                            topY = 10.0;
+                            botY = 0.0;
+                        }
+                        
+                        block.scissorBlade.topBlade.position.y = topY;
+                        block.scissorBlade.bottomBlade.position.y = botY;
+                        
+                        // Collision check (only if playing, not invincible, and not fully open)
+                        if (gameState === 'PLAYING' && !isInvincible && cycle < 2.0) {
+                            block.scissorBlade.topBlade.updateMatrixWorld(true);
+                            block.scissorBlade.bottomBlade.updateMatrixWorld(true);
+                            const topBox = new THREE.Box3().setFromObject(block.scissorBlade.topBlade);
+                            const botBox = new THREE.Box3().setFromObject(block.scissorBlade.bottomBlade);
+                            
+                            if (heliHazardBox.intersectsBox(topBox) || heliHazardBox.intersectsBox(botBox)) {
+                                timer -= 3.0;
+                                if (timer < 0) timer = 0;
+                                rescueStreak = 0;
+                                document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
+                                isInvincible = true;
+                                invincibilityTimer = 1.2;
+                                triggerScreenFlash();
+                                createWorldToast('-3s BLADE CUT', '#ff3333', block.x, helicopterY);
+                                Sound.playDamage();
+                                if (navigator.vibrate) {
+                                    navigator.vibrate([100, 50, 100]);
+                                }
+                            }
+                        }
+                    }
                 });
 
                 // Recycle off-screen terrain blocks to the right
@@ -2113,7 +2471,15 @@
                     const newX = rightmostX + blockWidth;
 
                     terrainCounter++;
-                    const newDirtHeight = 1.2 + Math.sin(terrainCounter * 0.7) * 0.8 + Math.random() * 0.4;
+                    let newDirtHeight = 1.2 + Math.sin(terrainCounter * 0.7) * 0.8 + Math.random() * 0.4;
+                    let isBuilding = false;
+                    
+                    if (currentStage === 6) {
+                        isBuilding = (Math.random() < 0.35 && terrainCounter % 4 === 0);
+                        newDirtHeight = isBuilding ? (4.0 + Math.random() * 2.2) : (1.0 + Math.random() * 0.4);
+                    } else if (currentStage === 7) {
+                        newDirtHeight = 0.4 + Math.random() * 0.3;
+                    }
                     
                     block.x = newX;
                     block.dirtHeight = newDirtHeight;
@@ -2129,17 +2495,34 @@
                     } else if (currentStage === 2.5) {
                         block.dirtMesh.material.color.setHex(0x4a3c27); // Gold-brown dirt
                         block.grassMesh.material.color.setHex(0x8f764a); // Gold highlights
+                    } else if (currentStage === 3) {
+                        block.dirtMesh.material.color.setHex(0x472d24); // Burnt red-brown
+                        block.grassMesh.material.color.setHex(0x634237);
+                    } else if (currentStage === 4) {
+                        block.dirtMesh.material.color.setHex(0x7f8c8d); // Steel grey
+                        block.grassMesh.material.color.setHex(0x95a5a6);
+                    } else if (currentStage === 5) {
+                        block.dirtMesh.material.color.setHex(0x151618); // Volcanic charcoal
+                        block.grassMesh.material.color.setHex(0x882200); // Lava red
+                    } else if (currentStage === 6) {
+                        if (isBuilding) {
+                            block.dirtMesh.material.color.setHex(0x2c3e50); // Building dark-blue
+                            block.grassMesh.material.color.setHex(0x34495e);
+                        } else {
+                            block.dirtMesh.material.color.setHex(0x7f8c8d); // City concrete
+                            block.grassMesh.material.color.setHex(0x95a5a6);
+                        }
                     } else {
-                        block.dirtMesh.material.color.setHex(0x6e503a);
-                        block.grassMesh.material.color.setHex(0x8c684d);
+                        block.dirtMesh.material.color.setHex(0xd2b48c); // Sand
+                        block.grassMesh.material.color.setHex(0x2e8b57); // Sea green
                     }
 
                     block.dirtMesh.scale.y = newDirtHeight;
                     block.dirtMesh.position.set(newX, newDirtHeight / 2, 0);
                     block.grassMesh.position.set(newX, newDirtHeight + 0.15, 0);
 
-                    // Dynamic Ceiling generation (Stage 2 & 2.5: Caves & Tunnels)
-                    if (currentStage === 2 || currentStage === 2.5) {
+                    // Dynamic Ceiling generation (Stage 2 & 2.5: Caves, Stage 4: Steel Tunnel)
+                    if (currentStage === 2 || currentStage === 2.5 || currentStage === 4) {
                         const ceilHeight = 0.8 + Math.sin(terrainCounter * 0.7) * 0.6 + Math.random() * 0.3;
                         block.ceilingHeight = ceilHeight;
                         block.bottomCeilingY = 10.0 - ceilHeight;
@@ -2147,6 +2530,8 @@
                         block.ceilingMesh.position.set(newX, 10.0 - ceilHeight / 2, 0);
                         if (currentStage === 2.5) {
                             block.ceilingMesh.material.color.setHex(0x4a3c27);
+                        } else if (currentStage === 4) {
+                            block.ceilingMesh.material.color.setHex(0x7f8c8d); // Steel ceiling
                         } else {
                             block.ceilingMesh.material.color.setHex(0x2d3136);
                         }
@@ -2157,14 +2542,53 @@
                         block.bottomCeilingY = 10.0;
                     }
 
+                    // Recycle and spawn Spiked Maces (Stage 2 Caves)
+                    if (block.spikedMace) {
+                        scene.remove(block.spikedMace.group);
+                        block.spikedMace = null;
+                    }
+                    if (currentStage === 2 && Math.random() < 0.28) {
+                        const length = 2.2 + Math.random() * 1.6;
+                        const mace = buildSpikedMaceMesh(length);
+                        const pivotY = 10.0 - block.ceilingHeight;
+                        mace.group.position.set(newX, pivotY, 0);
+                        scene.add(mace.group);
+                        block.spikedMace = {
+                            group: mace.group,
+                            ballMesh: mace.ballMesh,
+                            length: length,
+                            speed: 2.2 + Math.random() * 1.5,
+                            phase: Math.random() * Math.PI
+                        };
+                    }
+
+                    // Recycle and spawn Scissor Blades (Stage 4 Tunnel)
+                    if (block.scissorBlade) {
+                        scene.remove(block.scissorBlade.group);
+                        block.scissorBlade = null;
+                    }
+                    if (currentStage === 4 && Math.random() < 0.25) {
+                        const blades = buildScissorBladeMesh();
+                        blades.group.position.set(newX, 0, 0);
+                        block.scissorBlade = {
+                            group: blades.group,
+                            topBlade: blades.topBlade,
+                            bottomBlade: blades.bottomBlade,
+                            speedOffset: Math.random() * 2.0
+                        };
+                    }
+
                     terrainBlocks.push(block);
 
                     // Chance to spawn omino on the newly recycled block
                     let spawnedItem = false;
                     if (currentStage !== 2.5) {
-                        if (Math.random() < 0.18 && ominiArray.length < 3) {
-                            spawnOminoOnBlock(block);
-                            spawnedItem = true;
+                        // Do not spawn citizens in lava level (inferno 5) or steel tunnels (4)
+                        if (currentStage !== 4 && currentStage !== 5) {
+                            if (Math.random() < 0.18 && ominiArray.length < 3) {
+                                spawnOminoOnBlock(block);
+                                spawnedItem = true;
+                            }
                         }
                         if (!spawnedItem && Math.random() < 0.12 && fuelCansArray.length < 2) {
                             spawnFuelCanOnBlock(block);
@@ -2361,17 +2785,17 @@
                     });
                 }
 
-                // UPDATE FALLING ROCKS (Stage 3)
+                // UPDATE FALLING METEORITES (Stage 3 - few and dodgeable)
                 if (currentStage === 3) {
                     rockSpawnTimer += dt;
-                    const nextSpawn = 1.6 + Math.random() * 1.2;
-                    if (rockSpawnTimer >= nextSpawn && fallingRocks.length < 3) {
+                    const nextSpawn = 2.6 + Math.random() * 2.8;
+                    if (rockSpawnTimer >= nextSpawn && fallingRocks.length < 2) {
                         spawnFallingRock();
                         rockSpawnTimer = 0.0;
                     }
                 }
 
-                // Update falling rock position and check collision
+                // Update falling rock/meteorite position and check collision
                 for (let i = fallingRocks.length - 1; i >= 0; i--) {
                     const rock = fallingRocks[i];
                     rock.x += rock.vx * dt;
@@ -2379,6 +2803,11 @@
                     rock.mesh.position.set(rock.x, rock.y, 0);
                     rock.mesh.rotation.x += rock.rotSpeedX * dt;
                     rock.mesh.rotation.y += rock.rotSpeedY * dt;
+
+                    // Emit flame trail particles
+                    if (Math.random() < 0.4) {
+                        spawnMeteoriteTrail(rock.x, rock.y, 0);
+                    }
 
                     // Bounding Box Collision check
                     if (!isInvincible) {
@@ -2394,7 +2823,7 @@
                             invincibilityTimer = 1.2;
 
                             triggerScreenFlash();
-                            createWorldToast('-3s ROCK IMPACT', '#ff3333', rock.x, rock.y);
+                            createWorldToast('-3s METEORITE', '#ff3333', rock.x, rock.y);
                             Sound.playDamage();
 
                             if (navigator.vibrate) {
