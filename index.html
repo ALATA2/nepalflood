@@ -2078,14 +2078,32 @@
             }
         }
 
+        function requestFullScreenIfMobile() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                const docElm = document.documentElement;
+                if (docElm.requestFullscreen) {
+                    docElm.requestFullscreen().catch(() => {});
+                } else if (docElm.mozRequestFullScreen) {
+                    docElm.mozRequestFullScreen().catch(() => {});
+                } else if (docElm.webkitRequestFullscreen) {
+                    docElm.webkitRequestFullscreen().catch(() => {});
+                } else if (docElm.msRequestFullscreen) {
+                    docElm.msRequestFullscreen().catch(() => {});
+                }
+            }
+        }
+
         // Hook up menu click handlers
         document.getElementById('nepal-flood-btn-start').addEventListener('click', () => {
+            requestFullScreenIfMobile();
             Sound.init();
             Sound.resume();
             startPlaying();
             Sound.startMotor();
         });
         document.getElementById('nepal-flood-btn-restart').addEventListener('click', () => {
+            requestFullScreenIfMobile();
             Sound.init();
             Sound.resume();
             startPlaying();
