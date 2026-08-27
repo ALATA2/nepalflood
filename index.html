@@ -288,6 +288,11 @@
         </div>
     </div>
 
+    <!-- Autopilot Button (Toggle with R key or Tap) -->
+    <div id="nepal-flood-autopilot-btn" style="position: absolute; bottom: 20px; right: 20px; z-index: 15; background: rgba(0,0,0,0.8); border: 3px solid #ffcc00; border-radius: 6px; padding: 12px 16px; color: #ffcc00; font-family: 'Press Start 2P', monospace; font-size: 8px; cursor: pointer; display: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+        AUTOPILOT (R): <span id="nepal-flood-autopilot-state" style="color: #ff3333; font-weight: bold;">OFF</span>
+    </div>
+
     <!-- Start Menu Screen -->
     <div id="nepal-flood-start" class="nepal-flood-overlay">
         <h1 class="nepal-flood-title">FLOOD NEPAL</h1>
@@ -339,6 +344,7 @@
     <script>
         // --- GAME CONSTANTS & STATE ---
         let gameState = 'START'; // 'START', 'PLAYING', 'GAMEOVER'
+        let autopilotActive = false;
         let score = 0;
         let timer = 59.0;
         let distanceTraveled = 0;
@@ -1863,6 +1869,146 @@
             }, 150);
         }
 
+        // --- AUTOPILOT AI LOGIC (R KEY / SCREEN BTN) ---
+        function updateAutopilot(dt, time) {
+            if (!autopilotActive || gameState !== 'PLAYING') return;
+
+            // 1. Scan safe vertical corridor ahead
+            const scanX = helicopterX + 2.5;
+            const groundY = getGroundHeightAtX(scanX);
+            const waterTopY = waterMesh.position.y + 2.25;
+            
+            // Keep safe distance from ground/water
+            let minSafeY = Math.max(groundY + 0.95, waterTopY + 0.85);
+            
+            // Keep safe distance from ceiling
+            let maxSafeY = 10.0 - 0.95;
+            for (let i = 0; i < terrainBlocks.length; i++) {
+                const b = terrainBlocks[i];
+                if (Math.abs(b.x - scanX) < blockWidth) {
+                    if (b.ceilingHeight > 0) {
+                        maxSafeY = b.bottomCeilingY - 0.95;
+                    }
+                    break;
+                }
+            }
+
+            // Target the center of the safe corridor by default
+            let targetY = (minSafeY + maxSafeY) / 2;
+
+            // 2. Track nearest collectible item (citizen, fuel can, or coin)
+            let closestItem = null;
+            let closestDist = 12.0;
+
+            // Check omini
+            ominiArray.forEach(o => {
+                const dist = o.x - helicopterX;
+                if (dist > -1.0 && dist < closestDist) {
+                    closestDist = dist;
+                    closestItem = o;
+                }
+            });
+
+            // Check fuel cans
+            fuelCansArray.forEach(c => {
+                const dist = c.x - helicopterX;
+                if (dist > -1.0 && dist < closestDist) {
+                    closestDist = dist;
+                    closestItem = c;
+                }
+            });
+
+            // Check coins
+            coinsArray.forEach(c => {
+                const dist = c.x - helicopterX;
+                if (dist > -1.0 && dist < closestDist) {
+                    closestDist = dist;
+                    closestItem = c;
+                }
+            });
+
+            if (closestItem) {
+                targetY = closestItem.y;
+            }
+
+            // Always clamp the target inside safe corridor boundaries
+            targetY = THREE.MathUtils.clamp(targetY, minSafeY, maxSafeY);
+
+            // 3. Evasion: Falling meteorites (Stage 3)
+            fallingRocks.forEach(rock => {
+                const dx = rock.x - helicopter.position.x;
+                const dy = rock.y - helicopter.position.y;
+                if (dx > -0.5 && dx < 3.2 && Math.abs(dy) < 1.7) {
+                    if (rock.y > helicopter.position.y) {
+                        targetY = minSafeY; // Dive
+                    } else {
+                        targetY = maxSafeY; // Climb
+                    }
+                }
+            });
+
+            // 4. Evasion: Swinging spiked maces (Stage 2)
+            terrainBlocks.forEach(b => {
+                if (b.spikedMace) {
+                    const dx = b.x - helicopter.position.x;
+                    if (dx > -0.8 && dx < 2.8) {
+                        const ballWorldPos = new THREE.Vector3();
+                        b.spikedMace.ballMesh.getWorldPosition(ballWorldPos);
+                        const ballY = ballWorldPos.y;
+                        if (Math.abs(ballY - helicopter.position.y) < 1.5) {
+                            if (ballY > helicopter.position.y) {
+                                targetY = minSafeY;
+                            } else {
+                                targetY = maxSafeY;
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 5. Evasion: Prince of Persia scissor blades (Stage 4)
+            terrainBlocks.forEach(b => {
+                if (b.scissorBlade) {
+                    const dx = b.x - helicopter.position.x;
+                    if (dx > -0.8 && dx < 2.8) {
+                        const topBladeY = b.scissorBlade.topBlade.position.y;
+                        const bottomBladeY = b.scissorBlade.bottomBlade.position.y;
+                        targetY = (topBladeY + bottomBladeY) / 2; // Target the gap center
+                    }
+                }
+            });
+
+            // Apply steering decision
+            if (helicopter.position.y > targetY) {
+                isDescending = true;
+            } else {
+                isDescending = false;
+            }
+        }
+
+        // Toggles Autopilot via screen button click
+        document.getElementById('nepal-flood-autopilot-btn').addEventListener('click', () => {
+            autopilotActive = !autopilotActive;
+            syncAutopilotUI();
+        });
+
+        // Toggles Autopilot via keyboard "R" key
+        window.addEventListener('keydown', (e) => {
+            if (e.key && e.key.toLowerCase() === 'r') {
+                autopilotActive = !autopilotActive;
+                syncAutopilotUI();
+            }
+        });
+
+        function syncAutopilotUI() {
+            const stateText = document.getElementById('nepal-flood-autopilot-state');
+            if (stateText) {
+                stateText.innerText = autopilotActive ? 'ON' : 'OFF';
+                stateText.style.color = autopilotActive ? '#00ff00' : '#ff3333';
+            }
+            createWorldToast(autopilotActive ? 'AUTOPILOT ON' : 'AUTOPILOT OFF', autopilotActive ? '#00ff00' : '#ff3333', 0, 7);
+        }
+
         // --- PLAYER CONTROLS (MOUSE/TOUCH) ---
         window.addEventListener('pointerdown', (e) => {
             if (e.target.closest('button')) return;
@@ -2035,6 +2181,15 @@
             document.getElementById('nepal-flood-gameover').style.display = 'none';
             document.getElementById('nepal-flood-ui-container').style.display = 'flex';
             
+            // Sync Autopilot buttons
+            autopilotActive = false;
+            const stateText = document.getElementById('nepal-flood-autopilot-state');
+            if (stateText) {
+                stateText.innerText = 'OFF';
+                stateText.style.color = '#ff3333';
+            }
+            document.getElementById('nepal-flood-autopilot-btn').style.display = 'block';
+            
             gameState = 'PLAYING';
 
             // Show initial warning banners
@@ -2053,6 +2208,7 @@
             Sound.stopMotor();
             Sound.playGameOver();
             document.getElementById('nepal-flood-warning').style.display = 'none';
+            document.getElementById('nepal-flood-autopilot-btn').style.display = 'none';
             
             // Save and check HighScore
             if (score > highScore) {
@@ -2236,6 +2392,9 @@
 
             } else if (gameState === 'PLAYING') {
                 gameElapsedTime += dt;
+
+                // Run Autopilot decision logic
+                updateAutopilot(dt, time);
 
                 // Spawn exhaust particles from engine ports
                 spawnExhaustParticle(-0.22);
