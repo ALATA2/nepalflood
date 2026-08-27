@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     
     <!-- SEO Tags -->
-    <title>Flood Nepal - Salvataggio in Alluvione (Arcade 3D)</title>
-    <meta name="description" content="Salva gli omini dall'alluvione in Nepal in questo avvincente gioco WebGL 3D. Evita gli ostacoli e batti il tempo! Alluvione Nepal / Flood Nepal.">
-    <meta name="keywords" content="Nepal, Flood Nepal, Alluvione Nepal, game, Three.js, WebGL, helicopter game, arcade, gratis">
+    <title>Flood Nepal - Mil Mi-17 Rescue Mission (3D Arcade)</title>
+    <meta name="description" content="Rescue stranded citizens from the Nepal flood using the Mil Mi-17 military helicopter. Evade obstacles and survive in this 3D WebGL side-scroller game.">
+    <meta name="keywords" content="Nepal, Flood Nepal, Alluvione Nepal, game, Three.js, WebGL, helicopter game, rescue game, arcade, play, free">
     
     <!-- Retro Arcade Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -260,20 +260,20 @@
     <div id="nepal-flood-flash" class="nepal-flood-damage-flash"></div>
     
     <!-- Warning message overlay during surges -->
-    <div id="nepal-flood-warning">ALLERTA PIENA!<br>PUNTI RESCUE X2!</div>
+    <div id="nepal-flood-warning">FLOOD SURGE ACTIVE!<br>RESCUE POINTS X2!</div>
 
     <!-- Gameplay HUD Overlay -->
     <div id="nepal-flood-ui-container">
         <div class="nepal-flood-hud-panel">
-            <span class="nepal-flood-hud-label">PUNTEGGIO</span>
+            <span class="nepal-flood-hud-label">SCORE</span>
             <span id="nepal-flood-score" class="nepal-flood-hud-value">000</span>
         </div>
         <div class="nepal-flood-hud-panel">
-            <span class="nepal-flood-hud-label">DISTANZA</span>
+            <span class="nepal-flood-hud-label">DISTANCE</span>
             <span id="nepal-flood-distance" class="nepal-flood-hud-value">0 m</span>
         </div>
         <div class="nepal-flood-hud-panel">
-            <span class="nepal-flood-hud-label">TEMPO</span>
+            <span class="nepal-flood-hud-label">TIME</span>
             <span id="nepal-flood-timer" class="nepal-flood-hud-value">30.0</span>
         </div>
     </div>
@@ -283,36 +283,36 @@
         <h1 class="nepal-flood-title">FLOOD NEPAL</h1>
         <h2 class="nepal-flood-subtitle">MIL MI-17 RESCUE MISSION</h2>
         <div class="nepal-flood-instructions">
-            Pilota, prendi il comando del <strong>Mil Mi-17</strong> dell'Esercito Nepalese! 
-            Vola all'infinito e salva i civili lungo la valle alluvionata dell'Himalaya.
+            Pilot, take command of the Nepalese Army <strong>Mil Mi-17</strong> helicopter! 
+            Monsoon rains have flooded the valleys of the Himalayas. Fly infinitely to rescue survivors.
             <br><br>
-            <strong>CONTROLLI:</strong>
+            <strong>CONTROLS:</strong>
             <ul>
-                <li><strong>Tieni premuto</strong> il Mouse o lo Schermo per far <strong>scendere</strong> l'elicottero.</li>
-                <li><strong>Rilascia</strong> per farlo <strong>salire</strong>.</li>
+                <li><strong>Press and Hold</strong> the Mouse or Screen to <strong>descend</strong> the helicopter.</li>
+                <li><strong>Release</strong> to <strong>ascend</strong>.</li>
             </ul>
-            <strong>DURANTE IL VOLO:</strong>
+            <strong>MISSION RULES:</strong>
             <ul>
-                <li>Salva gli <strong>omini arancioni</strong> (+1 punto, +3s tempo).</li>
-                <li>Evita <strong>droni grigi</strong> e <strong>uccelli rossi</strong> (-3s tempo!).</li>
-                <li><strong>ALLERTA PIENA</strong>: Ogni 15 secondi l'acqua sale! I salvataggi in alluvione valgono <strong>PUNTEGGIO DOPPIO (+2 punti, +4s tempo)</strong>, ma attento all'onda anomala dietro di te!</li>
+                <li>Save the <strong>orange civilians</strong> on rooftops/hills (+1 score, +3s time).</li>
+                <li>Avoid flying <strong>grey drones</strong> and <strong>red birds</strong> (-3s time penalty!).</li>
+                <li><strong>FLOOD SURGE</strong>: Every 15 seconds the water rises! Rescues during surges award <strong>DOUBLE POINTS (+2 score, +4s time)</strong>, but watch out for the left surge wave!</li>
             </ul>
         </div>
-        <button id="nepal-flood-btn-start" class="nepal-flood-btn">AVVIA MOTORI MI-17</button>
+        <button id="nepal-flood-btn-start" class="nepal-flood-btn">START MI-17 ENGINES</button>
     </div>
 
     <!-- Game Over Screen -->
     <div id="nepal-flood-gameover" class="nepal-flood-overlay" style="display: none;">
-        <h1 class="nepal-flood-title" style="color: #ff3333;">MISSIONE FALLITA</h1>
-        <h2 class="nepal-flood-subtitle">ELICOTTERO PERDUTO</h2>
+        <h1 class="nepal-flood-title" style="color: #ff3333;">MISSION FAILED</h1>
+        <h2 class="nepal-flood-subtitle">HELICOPTER RETURNED TO BASE</h2>
         <div class="nepal-flood-stats">
-            PUNTEGGIO SALVATAGGI: <span id="nepal-flood-final-score" style="color: #ffcc00; font-weight: bold;">0</span>
+            FINAL RESCUES: <span id="nepal-flood-final-score" style="color: #ffcc00; font-weight: bold;">0</span>
             <br>
-            DISTANZA VOLATA: <span id="nepal-flood-final-distance" style="color: #33ccff; font-weight: bold;">0</span> m
+            DISTANCE FLOWN: <span id="nepal-flood-final-distance" style="color: #33ccff; font-weight: bold;">0</span> m
             <br>
-            RECORD PERSONALE: <span id="nepal-flood-high-score" style="color: #00cc66; font-weight: bold;">0</span>
+            PERSONAL BEST: <span id="nepal-flood-high-score" style="color: #00cc66; font-weight: bold;">0</span>
         </div>
-        <button id="nepal-flood-btn-restart" class="nepal-flood-btn">NUOVO DECOLLO</button>
+        <button id="nepal-flood-btn-restart" class="nepal-flood-btn">RELAUNCH MISSION</button>
     </div>
 
     <script>
@@ -388,7 +388,6 @@
                 const gain = this.ctx.createGain();
 
                 osc.type = 'triangle';
-                // Retro chime
                 osc.frequency.setValueAtTime(380, now);
                 osc.frequency.exponentialRampToValueAtTime(800, now + 0.16);
 
@@ -412,7 +411,6 @@
                 const gain = this.ctx.createGain();
 
                 osc.type = 'sawtooth';
-                // Deep retro rumble
                 osc.frequency.setValueAtTime(130, now);
                 osc.frequency.linearRampToValueAtTime(45, now + 0.35);
 
@@ -438,7 +436,6 @@
                 const gain = this.ctx.createGain();
 
                 osc.type = 'sine';
-                // Alternating two-tone siren
                 osc.frequency.setValueAtTime(550, now);
                 for (let i = 0; i < 4; i++) {
                     osc.frequency.setValueAtTime(550, now + i * 0.4);
@@ -489,9 +486,8 @@
                 this.motorGain = this.ctx.createGain();
 
                 this.motorOsc.type = 'sawtooth';
-                this.motorOsc.frequency.setValueAtTime(42, now); // heavy helicopter motor hum
+                this.motorOsc.frequency.setValueAtTime(42, now); 
 
-                // lowpass filter creates thick mechanical drone
                 const filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
                 filter.frequency.setValueAtTime(140, now);
@@ -507,7 +503,6 @@
 
             updateMotor(yVel) {
                 if (!this.ctx || !this.motorOsc) return;
-                // Pitch modulates with vertical velocity
                 const pitch = 42 + Math.abs(yVel) * 2.8 + (yVel > 0 ? 10 : 0);
                 this.motorOsc.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.05);
             },
@@ -530,13 +525,13 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.setClearColor(0x3a4454, 1);
+        
+        // Bright Alpine Blue Sky color scheme
+        const baseSkyColor = new THREE.Color(0x207be6);
+        const stormSkyColor = new THREE.Color(0x2d323f);
+        renderer.setClearColor(baseSkyColor.getHex(), 1);
 
         const scene = new THREE.Scene();
-        
-        // Base sky color
-        const baseSkyColor = new THREE.Color(0x3a4454);
-        const stormSkyColor = new THREE.Color(0x222831);
         scene.fog = new THREE.FogExp2(baseSkyColor.getHex(), 0.02);
 
         // Fixed 2.5D Camera (Looking slightly down from Z=16)
@@ -581,28 +576,58 @@
 
         // --- GAME WORLD CREATION ---
 
-        // 1. Far Background Mountains (Himalayas parallax effect)
+        // 1. Far Background Mountains (Himalayas parallax effect with snow-capped peaks)
         const mountainGroup = new THREE.Group();
         scene.add(mountainGroup);
         const backgroundMountains = [];
 
-        const mountGeom = new THREE.ConeGeometry(7, 13, 4);
-        mountGeom.rotateY(Math.PI / 4); // align vertices frontally
-        const mountMat = new THREE.MeshStandardMaterial({ color: 0x272f3d, roughness: 0.95 });
+        const mountBaseMat = new THREE.MeshStandardMaterial({ color: 0x47515c, roughness: 0.95 }); // grey rock
+        const mountSnowMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });  // white snow
 
-        // Spawn 3 mountains staggered on Z = -8
+        function createSnowCappedMountain(radius, height) {
+            const group = new THREE.Group();
+            
+            // Rock base cone
+            const baseGeom = new THREE.ConeGeometry(radius, height, 5);
+            baseGeom.rotateY(Math.PI / 5);
+            const baseMesh = new THREE.Mesh(baseGeom, mountBaseMat);
+            baseMesh.position.set(0, height / 2, 0);
+            baseMesh.castShadow = false;
+            baseMesh.receiveShadow = false;
+            group.add(baseMesh);
+            
+            // Snow cap cone sitting at the peak
+            const capHeight = height * 0.35;
+            const capRadius = radius * 0.35;
+            const capGeom = new THREE.ConeGeometry(capRadius, capHeight, 5);
+            capGeom.rotateY(Math.PI / 5);
+            const capMesh = new THREE.Mesh(capGeom, mountSnowMat);
+            capMesh.position.set(0, height - capHeight / 2, 0.05); // slight offset to prevent Z-fighting
+            capMesh.castShadow = false;
+            capMesh.receiveShadow = false;
+            group.add(capMesh);
+            
+            return group;
+        }
+
+        // Spawn 3 varied mountains staggered on Z = -8
+        const mountainDims = [
+            { r: 7.5, h: 14 },
+            { r: 10.0, h: 18 },
+            { r: 6.5, h: 12 }
+        ];
+
         for(let i = 0; i < 3; i++) {
-            const mesh = new THREE.Mesh(mountGeom, mountMat);
+            const dim = mountainDims[i];
+            const mesh = createSnowCappedMountain(dim.r, dim.h);
             const xPos = -12 + i * 14 + (Math.random() - 0.5) * 3;
-            mesh.position.set(xPos, 4.5, -8.0);
-            mesh.castShadow = false;
-            mesh.receiveShadow = false;
+            mesh.position.set(xPos, -0.6, -8.0);
             mountainGroup.add(mesh);
 
             backgroundMountains.push({
                 mesh: mesh,
                 x: xPos,
-                speedFactor: 0.12 // travels slowly for depth sensation
+                speedFactor: 0.12 // slow scrolling for distance feel
             });
         }
 
@@ -814,10 +839,6 @@
         helicopter.add(finMesh);
 
         // Tricycle Landing Gear
-        const strutMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3 });
-        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 });
-
-        // Front double-wheel
         const noseStrutGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 6);
         const noseStrut = new THREE.Mesh(noseStrutGeom, strutMat);
         noseStrut.position.set(0.9, -0.6, 0);
@@ -1071,15 +1092,14 @@
                 new THREE.BoxGeometry(0.1, 0.1, 0.1),
                 new THREE.MeshBasicMaterial({ color: 0xffffff })
             );
-            // Spawn at the top of the wave (X of wave, Y of wave crest)
             const splashY = 4.0 * currentWaveScaleY + 4.0;
             p.position.set(currentWaveX + 0.5, splashY + (Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 1.5);
             scene.add(p);
 
             waveSprayParticles.push({
                 mesh: p,
-                vx: 4.0 + Math.random() * 3.0, // shoot right
-                vy: 1.0 + Math.random() * 2.0, // splash up
+                vx: 4.0 + Math.random() * 3.0, 
+                vy: 1.0 + Math.random() * 2.0, 
                 vz: (Math.random() - 0.5) * 1.5,
                 life: 0.8
             });
@@ -1092,7 +1112,7 @@
                 p.mesh.position.y += p.vy * dt;
                 p.mesh.position.z += p.vz * dt;
 
-                p.vy -= 9.8 * dt; // gravity pulls down
+                p.vy -= 9.8 * dt; 
                 p.life -= dt;
                 p.mesh.scale.setScalar(Math.max(0, p.life / 0.8));
 
@@ -1434,7 +1454,7 @@
                     targetWaveX = -13.0;
                     targetWaveScaleY = 0.5;
 
-                    // Interpolate fog and light back to base shades
+                    // Interpolate fog and light back to bright blue base
                     scene.fog.color.lerp(baseSkyColor, 0.05);
                     renderer.setClearColor(scene.fog.color, 1);
                     dirLight.color.lerp(baseLightColor, 0.05);
