@@ -261,6 +261,9 @@
     
     <!-- Warning message overlay during surges -->
     <div id="nepal-flood-warning">FLOOD SURGE ACTIVE!<br>RESCUE POINTS X2!</div>
+    
+    <!-- Stage transition banner overlay -->
+    <div id="nepal-flood-stage-banner" style="position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); display: none; background: rgba(0,0,0,0.88); border: 4px solid #ffcc00; padding: 22px 36px; color: #ffffff; font-size: 14px; font-weight: bold; text-shadow: 2px 2px #000; z-index: 15; border-radius: 8px; font-family: 'Press Start 2P', monospace; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.6); pointer-events: none; transition: opacity 0.3s;"></div>
 
     <!-- Gameplay HUD Overlay -->
     <div id="nepal-flood-ui-container">
@@ -357,6 +360,21 @@
         // Rotors rotation speed variables
         let mainRotorSpeed = 0.8;
         let tailRotorSpeed = 0.9;
+
+        // Progressive Stages variables
+        let currentStage = 1;
+        let prevStage = 1;
+        
+        // Falling rocks variables (Stage 3)
+        const fallingRocks = [];
+        let rockSpawnTimer = 0.0;
+        const rockGeom = new THREE.DodecahedronGeometry(0.32);
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x5a504a, roughness: 0.9 });
+
+        // Water splash particles (Submersion)
+        const waterSplashParticles = [];
+        const splashGeom = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+        const splashMat = new THREE.MeshBasicMaterial({ color: 0xaaccff, transparent: true, opacity: 0.8 });
 
         // --- WEB AUDIO API SYNTHESIZER ---
         const Sound = {
@@ -651,12 +669,12 @@
             const x = startX + i * blockWidth;
             const dirtHeight = 1.2 + Math.sin(i * 0.8) * 0.8 + Math.random() * 0.4;
             
-            const dirtMesh = new THREE.Mesh(dirtGeometry, dirtMaterial);
+            const dirtMesh = new THREE.Mesh(dirtGeometry, dirtMaterial.clone());
             dirtMesh.castShadow = true;
             dirtMesh.receiveShadow = true;
             terrainGroup.add(dirtMesh);
 
-            const grassMesh = new THREE.Mesh(grassGeometry, grassMaterial);
+            const grassMesh = new THREE.Mesh(grassGeometry, grassMaterial.clone());
             grassMesh.castShadow = true;
             grassMesh.receiveShadow = true;
             terrainGroup.add(grassMesh);
@@ -665,12 +683,22 @@
             dirtMesh.position.set(x, dirtHeight / 2, 0);
             grassMesh.position.set(x, dirtHeight + 0.15, 0);
 
+            // Ceiling blocks (active in Cave Stage 2)
+            const ceilingMesh = new THREE.Mesh(dirtGeometry, dirtMaterial.clone());
+            ceilingMesh.castShadow = true;
+            ceilingMesh.receiveShadow = true;
+            ceilingMesh.visible = false;
+            terrainGroup.add(ceilingMesh);
+
             terrainBlocks.push({
                 x: x,
                 topHeight: dirtHeight + 0.3,
                 dirtHeight: dirtHeight,
                 dirtMesh: dirtMesh,
-                grassMesh: grassMesh
+                grassMesh: grassMesh,
+                ceilingMesh: ceilingMesh,
+                ceilingHeight: 0.0,
+                bottomCeilingY: 10.0
             });
             terrainCounter = i;
         }
@@ -1169,6 +1197,93 @@
             }
         }
 
+        // 10. Water Splash Particles
+        function spawnWaterSplashParticle(waterTopY) {
+            const p = new THREE.Mesh(splashGeom, splashMat);
+            p.position.set(helicopterX + (Math.random() - 0.5) * 1.5, waterTopY, (Math.random() - 0.5) * 0.8);
+            scene.add(p);
+
+            waterSplashParticles.push({
+                mesh: p,
+                vx: -currentScrollSpeed - (1.0 + Math.random() * 2.0),
+                vy: 1.5 + Math.random() * 2.0,
+                vz: (Math.random() - 0.5) * 1.0,
+                life: 0.6
+            });
+        }
+
+        function updateWaterSplashParticles(dt) {
+            for (let i = waterSplashParticles.length - 1; i >= 0; i--) {
+                const p = waterSplashParticles[i];
+                p.mesh.position.x += p.vx * dt;
+                p.mesh.position.y += p.vy * dt;
+                p.mesh.position.z += p.vz * dt;
+
+                p.vy -= 9.8 * dt;
+                p.life -= dt;
+                p.mesh.scale.setScalar(Math.max(0, p.life / 0.6));
+
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    waterSplashParticles.splice(i, 1);
+                }
+            }
+        }
+
+        // 11. Falling Rocks Mechanics (Stage 3)
+        function spawnFallingRock() {
+            const mesh = new THREE.Mesh(rockGeom, rockMat);
+            mesh.castShadow = true;
+            scene.add(mesh);
+
+            const x = helicopterX + 8.0 + Math.random() * 8.0;
+            const y = 10.5;
+            mesh.position.set(x, y, 0);
+
+            fallingRocks.push({
+                mesh: mesh,
+                x: x,
+                y: y,
+                vx: -currentScrollSpeed - (1.0 + Math.random() * 2.0),
+                vy: -(3.5 + Math.random() * 3.5),
+                rotSpeedX: (Math.random() - 0.5) * 4,
+                rotSpeedY: (Math.random() - 0.5) * 4
+            });
+        }
+
+        function getGroundHeightAtX(x) {
+            let closestBlock = terrainBlocks[0];
+            let minDist = Math.abs(terrainBlocks[0].x - x);
+            for (let i = 1; i < terrainBlocks.length; i++) {
+                const dist = Math.abs(terrainBlocks[i].x - x);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestBlock = terrainBlocks[i];
+                }
+            }
+            return closestBlock.topHeight;
+        }
+
+        // 12. Stage Transition UI Announcements
+        function showStageBanner(title, subtitle) {
+            const banner = document.getElementById('nepal-flood-stage-banner');
+            banner.innerHTML = `<span style="color:#ffcc00">${title}</span><br><br><span style="font-size:9px; color:#cccccc; line-height: 1.6;">${subtitle}</span>`;
+            banner.style.display = 'block';
+            banner.style.opacity = '1';
+            
+            setTimeout(() => {
+                let op = 1.0;
+                const fadeInterval = setInterval(() => {
+                    op -= 0.05;
+                    banner.style.opacity = op;
+                    if (op <= 0) {
+                        clearInterval(fadeInterval);
+                        banner.style.display = 'none';
+                    }
+                }, 30);
+            }, 2500);
+        }
+
         // --- UI TOAST (FLOATING MESSAGES) ---
         function createWorldToast(message, color, x, y) {
             const vector = new THREE.Vector3(x, y, 0);
@@ -1254,6 +1369,34 @@
             isInvincible = false;
             invincibilityTimer = 0;
             helicopter.visible = true;
+
+            // Stages & Hazards reset
+            currentStage = 1;
+            prevStage = 1;
+            rockSpawnTimer = 0.0;
+            
+            fallingRocks.forEach(r => scene.remove(r.mesh));
+            fallingRocks.length = 0;
+            
+            waterSplashParticles.forEach(p => scene.remove(p.mesh));
+            waterSplashParticles.length = 0;
+
+            document.getElementById('nepal-flood-stage-banner').style.display = 'none';
+
+            // Reset terrain blocks colors to Stage 1 and hide ceilings
+            terrainBlocks.forEach(b => {
+                b.dirtMesh.material.color.setHex(0x5c4033);
+                b.grassMesh.material.color.setHex(0x477a34);
+                if (b.ceilingMesh) {
+                    b.ceilingMesh.visible = false;
+                    b.ceilingMesh.material.color.setHex(0x2d3136);
+                }
+            });
+
+            // Reset sky/fog and light colors
+            scene.fog.color.copy(baseSkyColor);
+            renderer.setClearColor(scene.fog.color, 1);
+            dirLight.color.copy(baseLightColor);
 
             // Surge logic reset
             isSurging = false;
@@ -1376,6 +1519,7 @@
             // Particles update
             updateRescueParticles(dt);
             updateWaveSpray(dt);
+            updateWaterSplashParticles(dt);
 
             if (gameState === 'START') {
                 // Helicopter hovering in place on the left side
@@ -1405,6 +1549,47 @@
                 });
 
             } else if (gameState === 'PLAYING') {
+                // STAGE PROGRESSION & ANNOUNCEMENTS
+                if (distanceTraveled < 600) {
+                    currentStage = 1;
+                } else if (distanceTraveled < 1300) {
+                    currentStage = 2;
+                } else {
+                    currentStage = 3;
+                }
+
+                if (currentStage !== prevStage) {
+                    prevStage = currentStage;
+                    if (currentStage === 2) {
+                        showStageBanner("STAGE 2: ROCKY CAVES", "WATCH THE ROOF! DANGER OF CEILING COLLISIONS!");
+                    } else if (currentStage === 3) {
+                        showStageBanner("STAGE 3: ROCKSLIDE PASS", "WARNING: JAGGED CANYON PEAKS & FALLING ROCKS!");
+                        // Hide ceiling meshes when leaving caves
+                        terrainBlocks.forEach(b => {
+                            if (b.ceilingMesh) b.ceilingMesh.visible = false;
+                        });
+                    }
+                }
+
+                // Smoothly modulate sky, fog, and lights based on stage (only if not surging)
+                if (!isSurging) {
+                    let targetSky;
+                    let targetLight;
+                    if (currentStage === 1) {
+                        targetSky = baseSkyColor;
+                        targetLight = baseLightColor;
+                    } else if (currentStage === 2) {
+                        targetSky = new THREE.Color(0x1a2228); // subterranean grey-blue
+                        targetLight = new THREE.Color(0x6e7682);
+                    } else {
+                        targetSky = new THREE.Color(0x594c44); // Sunset dusty orange-brown
+                        targetLight = new THREE.Color(0x948275);
+                    }
+                    scene.fog.color.lerp(targetSky, 0.05);
+                    renderer.setClearColor(scene.fog.color, 1);
+                    dirLight.color.lerp(targetLight, 0.05);
+                }
+
                 // TIMER & Distance Count
                 timer -= dt;
                 if (timer <= 0) {
@@ -1415,6 +1600,27 @@
 
                 // Speed increases dynamically based on rescues
                 currentScrollSpeed = baseScrollSpeed + score * 0.18;
+
+                // --- WATER SUBMERSION CHECK & PENALTY ---
+                const waterTopY = waterMesh.position.y + 2.25; // Surface plane Y coordinate
+                const isSubmerged = (helicopterY < waterTopY);
+                if (isSubmerged) {
+                    // Apply heavy water drag (50% speed reduction)
+                    currentScrollSpeed *= 0.5;
+                    
+                    // Extra time drainage penalty (timer drains at 1.8x speed)
+                    timer -= 0.8 * dt;
+
+                    // Generate water splash particles
+                    if (Math.random() < 0.45) {
+                        spawnWaterSplashParticle(waterTopY);
+                    }
+
+                    if (navigator.vibrate && Math.random() < 0.2) {
+                        navigator.vibrate(15);
+                    }
+                }
+
                 distanceTraveled += currentScrollSpeed * dt;
                 document.getElementById('nepal-flood-distance').innerText = `${Math.floor(distanceTraveled)} m`;
 
@@ -1455,18 +1661,16 @@
                     targetWaterYOffset = 0.0;
                     targetWaveX = -13.0;
                     targetWaveScaleY = 0.5;
-
-                    // Interpolate fog and light back to bright blue base
-                    scene.fog.color.lerp(baseSkyColor, 0.05);
-                    renderer.setClearColor(scene.fog.color, 1);
-                    dirLight.color.lerp(baseLightColor, 0.05);
                 }
 
-                // SCROLL INFINITE TERRAIN
+                // SCROLL INFINITE TERRAIN & CEILINGS
                 terrainBlocks.forEach(block => {
                     block.x -= currentScrollSpeed * dt;
                     block.dirtMesh.position.x = block.x;
                     block.grassMesh.position.x = block.x;
+                    if (block.ceilingMesh) {
+                        block.ceilingMesh.position.x = block.x;
+                    }
                 });
 
                 // Recycle off-screen terrain blocks to the right
@@ -1482,9 +1686,36 @@
                     block.dirtHeight = newDirtHeight;
                     block.topHeight = newDirtHeight + 0.3;
 
+                    // Set block colors according to the current stage biome
+                    if (currentStage === 1) {
+                        block.dirtMesh.material.color.setHex(0x5c4033);
+                        block.grassMesh.material.color.setHex(0x477a34);
+                    } else if (currentStage === 2) {
+                        block.dirtMesh.material.color.setHex(0x2d3136);
+                        block.grassMesh.material.color.setHex(0x3a3f45);
+                    } else {
+                        block.dirtMesh.material.color.setHex(0x6e503a);
+                        block.grassMesh.material.color.setHex(0x8c684d);
+                    }
+
                     block.dirtMesh.scale.y = newDirtHeight;
                     block.dirtMesh.position.set(newX, newDirtHeight / 2, 0);
                     block.grassMesh.position.set(newX, newDirtHeight + 0.15, 0);
+
+                    // Dynamic Ceiling generation (Stage 2: Caves)
+                    if (currentStage === 2) {
+                        const ceilHeight = 0.8 + Math.sin(terrainCounter * 0.7) * 0.6 + Math.random() * 0.3;
+                        block.ceilingHeight = ceilHeight;
+                        block.bottomCeilingY = 10.0 - ceilHeight;
+                        block.ceilingMesh.scale.y = ceilHeight;
+                        block.ceilingMesh.position.set(newX, 10.0 - ceilHeight / 2, 0);
+                        block.ceilingMesh.material.color.setHex(0x2d3136);
+                        block.ceilingMesh.visible = true;
+                    } else {
+                        block.ceilingMesh.visible = false;
+                        block.ceilingHeight = 0.0;
+                        block.bottomCeilingY = 10.0;
+                    }
 
                     terrainBlocks.push(block);
 
@@ -1531,6 +1762,7 @@
                 verticalVelocity = THREE.MathUtils.clamp(verticalVelocity, -maxVerticalSpeed, maxVerticalSpeed);
 
                 helicopterY += verticalVelocity * dt;
+                // Keep flight within absolute bounds
                 helicopterY = THREE.MathUtils.clamp(helicopterY, minY, maxY);
 
                 // Hover oscillation
@@ -1583,9 +1815,64 @@
                     }
                 });
 
+                // UPDATE FALLING ROCKS (Stage 3)
+                if (currentStage === 3) {
+                    rockSpawnTimer += dt;
+                    const nextSpawn = 1.6 + Math.random() * 1.2;
+                    if (rockSpawnTimer >= nextSpawn && fallingRocks.length < 3) {
+                        spawnFallingRock();
+                        rockSpawnTimer = 0.0;
+                    }
+                }
+
+                // Update falling rock position and check collision
+                for (let i = fallingRocks.length - 1; i >= 0; i--) {
+                    const rock = fallingRocks[i];
+                    rock.x += rock.vx * dt;
+                    rock.y += rock.vy * dt;
+                    rock.mesh.position.set(rock.x, rock.y, 0);
+                    rock.mesh.rotation.x += rock.rotSpeedX * dt;
+                    rock.mesh.rotation.y += rock.rotSpeedY * dt;
+
+                    // Bounding Box Collision check
+                    if (!isInvincible) {
+                        rock.mesh.updateMatrixWorld(true);
+                        const rockBox = new THREE.Box3().setFromObject(rock.mesh);
+                        if (heliBox.intersectsBox(rockBox)) {
+                            timer -= 3.0;
+                            if (timer < 0) timer = 0;
+                            document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
+
+                            isInvincible = true;
+                            invincibilityTimer = 1.2;
+
+                            triggerScreenFlash();
+                            createWorldToast('-3s ROCK IMPACT', '#ff3333', rock.x, rock.y);
+                            Sound.playDamage();
+
+                            if (navigator.vibrate) {
+                                navigator.vibrate([100, 50, 100]);
+                            }
+
+                            scene.remove(rock.mesh);
+                            fallingRocks.splice(i, 1);
+                            continue;
+                        }
+                    }
+
+                    // Recycle if rock hits the ground, water surface, or scrolls away
+                    const groundY = getGroundHeightAtX(rock.x);
+                    const limitY = Math.max(groundY, waterTopY);
+
+                    if (rock.x < -16.0 || rock.y < limitY) {
+                        scene.remove(rock.mesh);
+                        fallingRocks.splice(i, 1);
+                    }
+                }
+
                 // COLLISION DETECTION (World space bounding boxes)
                 helicopter.updateMatrixWorld(true);
-                const heliBox = new THREE.Box3().setFromObject(cabinMesh); // collide on fuselage cabin
+                const heliBox = new THREE.Box3().setFromObject(cabinMesh);
 
                 // A. Omini rescue check
                 for (let i = ominiArray.length - 1; i >= 0; i--) {
@@ -1687,7 +1974,43 @@
                     }
                 }
 
-                // D. Left Wave Hazard collision check (only active during surge)
+                // D. Cave Ceiling collision check (Stage 2 only)
+                if (currentStage === 2 && !isInvincible) {
+                    let hitCeiling = false;
+                    for (let i = 0; i < terrainBlocks.length; i++) {
+                        const block = terrainBlocks[i];
+                        if (block.ceilingMesh.visible && Math.abs(block.x - helicopter.position.x) < 2.5) {
+                            block.ceilingMesh.updateMatrixWorld(true);
+                            const ceilBox = new THREE.Box3().setFromObject(block.ceilingMesh);
+                            if (heliBox.intersectsBox(ceilBox)) {
+                                hitCeiling = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (hitCeiling) {
+                        timer -= 3.0; 
+                        if (timer < 0) timer = 0;
+                        document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
+
+                        isInvincible = true;
+                        invincibilityTimer = 1.2;
+
+                        triggerScreenFlash();
+                        createWorldToast('-3s ROOF HIT', '#ff3333', helicopter.position.x, helicopterY + 0.5);
+
+                        Sound.playDamage();
+                        if (navigator.vibrate) {
+                            navigator.vibrate([100, 50, 100]);
+                        }
+
+                        // Physical bounce down recovery force
+                        verticalVelocity = -4.0;
+                    }
+                }
+
+                // E. Left Wave Hazard collision check (only active during surge)
                 if (isSurging && !isInvincible) {
                     leftWaveGroup.updateMatrixWorld(true);
                     const waveBox = new THREE.Box3().setFromObject(waveBodyMesh);
