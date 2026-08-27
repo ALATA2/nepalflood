@@ -81,15 +81,17 @@
         .nepal-flood-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(18, 25, 38, 0.85);
+            background: rgba(18, 25, 38, 0.92);
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
             z-index: 20;
             color: #ffffff;
             text-align: center;
-            padding: 20px;
+            padding: 30px 20px 50px 20px;
+            overflow-y: auto;
+            box-sizing: border-box;
         }
 
         .nepal-flood-title {
@@ -1876,9 +1878,22 @@
             isDescending = false;
         });
 
+        // Explicit Mobile Touch Commands
         window.addEventListener('touchstart', (e) => {
-            if (gameState === 'PLAYING') e.preventDefault();
+            if (e.target.closest('button')) return;
+            if (gameState === 'PLAYING') {
+                e.preventDefault(); // prevent default double-tap zooms or scrolling
+                isDescending = true;
+            }
         }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            isDescending = false;
+        });
+
+        window.addEventListener('touchcancel', () => {
+            isDescending = false;
+        });
 
         // --- RESIZE ---
         window.addEventListener('resize', () => {
