@@ -1651,7 +1651,43 @@
                     }
                 }
 
-                // C. Left Wave Hazard collision check (only active during surge)
+                // C. Terrain blocks collision check
+                if (!isInvincible) {
+                    let hitTerrain = false;
+                    for (let i = 0; i < terrainBlocks.length; i++) {
+                        const block = terrainBlocks[i];
+                        if (Math.abs(block.x - helicopter.position.x) < 2.5) {
+                            block.grassMesh.updateMatrixWorld(true);
+                            const blockBox = new THREE.Box3().setFromObject(block.grassMesh);
+                            if (heliBox.intersectsBox(blockBox)) {
+                                hitTerrain = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (hitTerrain) {
+                        timer -= 3.0; 
+                        if (timer < 0) timer = 0;
+                        document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
+
+                        isInvincible = true;
+                        invincibilityTimer = 1.2;
+
+                        triggerScreenFlash();
+                        createWorldToast('-3s CRASH', '#ff3333', helicopter.position.x, helicopterY - 0.5);
+
+                        Sound.playDamage();
+                        if (navigator.vibrate) {
+                            navigator.vibrate([100, 50, 100]);
+                        }
+
+                        // Physical bounce up recovery force
+                        verticalVelocity = 6.0;
+                    }
+                }
+
+                // D. Left Wave Hazard collision check (only active during surge)
                 if (isSurging && !isInvincible) {
                     leftWaveGroup.updateMatrixWorld(true);
                     const waveBox = new THREE.Box3().setFromObject(waveBodyMesh);
