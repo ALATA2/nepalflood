@@ -258,6 +258,11 @@
 </head>
 <body>
 
+    <!-- Splash Screen Overlay -->
+    <div id="nepal-flood-splash-screen" style="position: absolute; inset: 0; background: #121926; display: flex; justify-content: center; align-items: center; z-index: 1000; transition: opacity 0.8s ease-out;">
+        <img src="splash.jpg" style="max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 0 35px rgba(0,0,0,0.9);" alt="Flood Nepal Splash">
+    </div>
+
     <canvas id="nepal-flood-canvas"></canvas>
     <div id="nepal-flood-flash" class="nepal-flood-damage-flash"></div>
     
@@ -3090,6 +3095,17 @@
 
         // Start animation loop
         animate();
+
+        // Handle startup splash screen fade-out after 3 seconds
+        setTimeout(() => {
+            const splashScreen = document.getElementById('nepal-flood-splash-screen');
+            if (splashScreen) {
+                splashScreen.style.opacity = '0';
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                }, 800);
+            }
+        }, 3000);
 
     </script>
 </body>
