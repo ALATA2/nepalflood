@@ -54,26 +54,26 @@
             background: rgba(0, 0, 0, 0.75);
             border: 3px solid #ffcc00;
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
-            padding: 12px 20px;
+            padding: 12px 15px;
             color: #ffffff;
-            font-size: 14px;
+            font-size: 11px;
             text-shadow: 2px 2px #000;
             border-radius: 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 150px;
+            min-width: 120px;
         }
 
         .nepal-flood-hud-label {
-            font-size: 9px;
+            font-size: 8px;
             color: #ffcc00;
             margin-bottom: 6px;
             letter-spacing: 1px;
         }
 
         .nepal-flood-hud-value {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: bold;
         }
 
@@ -184,36 +184,41 @@
         /* Responsive Mobile Layout Adaptations */
         @media (max-width: 600px) {
             .nepal-flood-title {
-                font-size: 24px;
+                font-size: 20px;
             }
             .nepal-flood-subtitle {
-                font-size: 11px;
-                margin-bottom: 20px;
+                font-size: 10px;
+                margin-bottom: 15px;
             }
             .nepal-flood-instructions {
-                font-size: 8.5px;
-                padding: 15px;
-                line-height: 1.8;
-                margin-bottom: 20px;
+                font-size: 8px;
+                padding: 12px;
+                line-height: 1.7;
+                margin-bottom: 15px;
+            }
+            #nepal-flood-ui-container {
+                top: 10px;
+                left: 10px;
+                right: 10px;
             }
             .nepal-flood-hud-panel {
-                min-width: 110px;
-                padding: 8px 12px;
+                min-width: 90px;
+                padding: 6px 8px;
             }
             .nepal-flood-hud-value {
-                font-size: 14px;
+                font-size: 11px;
             }
             .nepal-flood-hud-label {
-                font-size: 7px;
+                font-size: 6px;
             }
             .nepal-flood-btn {
-                padding: 12px 30px;
-                font-size: 12px;
+                padding: 12px 25px;
+                font-size: 11px;
             }
             .nepal-flood-stats {
-                font-size: 12px;
-                padding: 10px 20px;
-                margin-bottom: 25px;
+                font-size: 11px;
+                padding: 10px 15px;
+                margin-bottom: 20px;
             }
         }
     </style>
@@ -233,6 +238,10 @@
             <span id="nepal-flood-score" class="nepal-flood-hud-value">000</span>
         </div>
         <div class="nepal-flood-hud-panel">
+            <span class="nepal-flood-hud-label">DISTANZA</span>
+            <span id="nepal-flood-distance" class="nepal-flood-hud-value">0 m</span>
+        </div>
+        <div class="nepal-flood-hud-panel">
             <span class="nepal-flood-hud-label">TEMPO</span>
             <span id="nepal-flood-timer" class="nepal-flood-hud-value">30.0</span>
         </div>
@@ -241,35 +250,38 @@
     <!-- Start Menu Screen -->
     <div id="nepal-flood-start" class="nepal-flood-overlay">
         <h1 class="nepal-flood-title">FLOOD NEPAL</h1>
-        <h2 class="nepal-flood-subtitle">SALVATAGGIO IN ALLUVIONE</h2>
+        <h2 class="nepal-flood-subtitle">MIL MI-17 RESCUE MISSION</h2>
         <div class="nepal-flood-instructions">
-            Benvenuto, Pilota! Le forti piogge hanno causato un'alluvione in Nepal. 
-            Il tuo elicottero si muove autonomamente a destra e sinistra.
+            Pilota, prendi il comando del <strong>Mil Mi-17</strong> dell'Esercito Nepalese! 
+            Le valli himalayane sono inondate. Vola all'infinito e salva più civili possibile.
             <br><br>
             <strong>CONTROLLI:</strong>
             <ul>
                 <li><strong>Tieni premuto</strong> il Mouse o il Touch per far <strong>scendere</strong> l'elicottero.</li>
-                <li><strong>Rilascia</strong> per farlo <strong>salire</strong>.</li>
+                <li><strong>Rilascia</strong> per farlo <strong>salire</strong> di quota.</li>
             </ul>
-            <strong>OBIETTIVO:</strong>
+            <strong>REGOLE DELLA MISSIONE:</strong>
             <ul>
-                <li>Salva gli <strong>omini</strong> sulla terra (+1 punto, +3 secondi).</li>
-                <li>Evita i <strong>droni grigi</strong> e gli <strong>uccelli rossi</strong> (-3 secondi!).</li>
+                <li>Salva gli <strong>omini arancioni</strong> sui tetti e colline (+1 punto, +3 secondi).</li>
+                <li>Evita <strong>droni grigi</strong> e <strong>uccelli rossi</strong> (-3 secondi!).</li>
+                <li>Fai attenzione a non rimanere troppo tempo immerso nell'acqua!</li>
             </ul>
         </div>
-        <button id="nepal-flood-btn-start" class="nepal-flood-btn">INIZIA IL SALVATAGGIO</button>
+        <button id="nepal-flood-btn-start" class="nepal-flood-btn">AVVIA MOTORI MI-17</button>
     </div>
 
     <!-- Game Over Screen -->
     <div id="nepal-flood-gameover" class="nepal-flood-overlay" style="display: none;">
-        <h1 class="nepal-flood-title" style="color: #ff3333;">TEMPO SCADUTO</h1>
-        <h2 class="nepal-flood-subtitle">ELICOTTERO RIENTRATO ALLA BASE</h2>
+        <h1 class="nepal-flood-title" style="color: #ff3333;">MISSIONE FALLITA</h1>
+        <h2 class="nepal-flood-subtitle">ELICOTTERO PERDUTO O RIENTRATO</h2>
         <div class="nepal-flood-stats">
-            PUNTEGGIO FINALE: <span id="nepal-flood-final-score" style="color: #ffcc00; font-weight: bold;">0</span>
+            PUNTEGGIO SALVATAGGI: <span id="nepal-flood-final-score" style="color: #ffcc00; font-weight: bold;">0</span>
             <br>
-            MIGLIOR PUNTEGGIO: <span id="nepal-flood-high-score" style="color: #00cc66; font-weight: bold;">0</span>
+            DISTANZA VOLATA: <span id="nepal-flood-final-distance" style="color: #33ccff; font-weight: bold;">0</span> m
+            <br>
+            RECORD SALVATAGGI: <span id="nepal-flood-high-score" style="color: #00cc66; font-weight: bold;">0</span>
         </div>
-        <button id="nepal-flood-btn-restart" class="nepal-flood-btn">RIGIOCA</button>
+        <button id="nepal-flood-btn-restart" class="nepal-flood-btn">NUOVO DECOLLO</button>
     </div>
 
     <script>
@@ -277,25 +289,31 @@
         let gameState = 'START'; // 'START', 'PLAYING', 'GAMEOVER'
         let score = 0;
         let timer = 30.0;
+        let distanceTraveled = 0;
         let highScore = localStorage.getItem('nepal-flood-highscore') ? parseInt(localStorage.getItem('nepal-flood-highscore')) : 0;
         
         let isDescending = false;
         let isInvincible = false;
         let invincibilityTimer = 0;
 
-        // Player physics
-        let helicopterX = 0;
-        let helicopterY = 8.0;
-        let helicopterDirection = 1; // 1 = moving right, -1 = moving left
-        let helicopterSpeed = 6.0;
+        // Player physics (Fixed X side-scrolling runner)
+        const helicopterX = -5.0; // Base forward position
+        let helicopterY = 7.5;
         let verticalVelocity = 0;
-        const gravity = 25.0; // Acceleration downwards when clicked
+        const gravity = 24.0; // Acceleration downwards when clicked
         const lift = 22.0;    // Acceleration upwards when released
         const maxVerticalSpeed = 9.0;
-        const minY = 1.8;
+        const minY = 1.7;
         const maxY = 8.2;
-        const minX = -12.0;
-        const maxX = 12.0;
+
+        // Infinite Side-scrolling Parameters
+        let baseScrollSpeed = 3.2;
+        let currentScrollSpeed = 0.0;
+        let terrainCounter = 0;
+
+        // Spin speed factors (decay on game over)
+        let mainRotorSpeed = 0.8;
+        let tailRotorSpeed = 0.9;
 
         // --- WEB AUDIO API SYNTHESIZER ---
         const Sound = {
@@ -327,18 +345,18 @@
                 const gain = this.ctx.createGain();
 
                 osc.type = 'triangle';
-                // Retro short arpeggio / rising pitch
-                osc.frequency.setValueAtTime(320, now);
-                osc.frequency.exponentialRampToValueAtTime(700, now + 0.16);
+                // Classic retro rising arpeggio sound
+                osc.frequency.setValueAtTime(350, now);
+                osc.frequency.exponentialRampToValueAtTime(750, now + 0.15);
 
-                gain.gain.setValueAtTime(0.15, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.16);
+                gain.gain.setValueAtTime(0.14, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
 
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
 
                 osc.start(now);
-                osc.stop(now + 0.16);
+                osc.stop(now + 0.15);
             },
 
             playDamage() {
@@ -351,9 +369,9 @@
                 const gain = this.ctx.createGain();
 
                 osc.type = 'sawtooth';
-                // Deep retro rumble drop pitch
-                osc.frequency.setValueAtTime(160, now);
-                osc.frequency.linearRampToValueAtTime(50, now + 0.35);
+                // Deep retro rumble alert
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.linearRampToValueAtTime(45, now + 0.35);
 
                 gain.gain.setValueAtTime(0.2, now);
                 gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
@@ -375,18 +393,18 @@
                 const gain = this.ctx.createGain();
 
                 osc.type = 'sawtooth';
-                // Decreasing sad melody / pitch drop
-                osc.frequency.setValueAtTime(200, now);
-                osc.frequency.linearRampToValueAtTime(80, now + 0.8);
+                // Melancholic sliding pitch
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(70, now + 0.85);
 
                 gain.gain.setValueAtTime(0.22, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.8);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.85);
 
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
 
                 osc.start(now);
-                osc.stop(now + 0.8);
+                osc.stop(now + 0.85);
             },
 
             startMotor() {
@@ -399,14 +417,14 @@
                 this.motorGain = this.ctx.createGain();
 
                 this.motorOsc.type = 'sawtooth';
-                this.motorOsc.frequency.setValueAtTime(45, now); // deep hum
+                this.motorOsc.frequency.setValueAtTime(42, now); // heavy helicopter motor base frequency
 
-                // lowpass filter makes sound muffled and mechanical
+                // lowpass filter creates thick mechanical drone
                 const filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(140, now);
+                filter.frequency.setValueAtTime(150, now);
 
-                this.motorGain.gain.setValueAtTime(0.06, now); // quiet hum
+                this.motorGain.gain.setValueAtTime(0.06, now); // quiet volume
 
                 this.motorOsc.connect(filter);
                 filter.connect(this.motorGain);
@@ -417,8 +435,8 @@
 
             updateMotor(yVel) {
                 if (!this.ctx || !this.motorOsc) return;
-                // Pitch rises when helicopter descends or moves faster
-                const pitch = 45 + Math.abs(yVel) * 3 + (yVel > 0 ? 12 : 0);
+                // Pitch modulates with movement
+                const pitch = 42 + Math.abs(yVel) * 2.8 + (yVel > 0 ? 10 : 0);
                 this.motorOsc.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.05);
             },
 
@@ -450,11 +468,10 @@
         camera.position.set(0, 6, 16);
         camera.lookAt(0, 5, 0);
 
-        // Camera Portrait Dynamic Aspect Fit
+        // Dynamic Camera FOV for Mobile Aspect Ratio Fitting
         function updateCameraFov() {
             camera.aspect = window.innerWidth / window.innerHeight;
             if (camera.aspect < 1.0) {
-                // Portrait screen logic: increase field of view to keep X boundary viewable
                 camera.fov = 45 / camera.aspect;
             } else {
                 camera.fov = 45;
@@ -464,7 +481,7 @@
         updateCameraFov();
 
         // --- LIGHTING ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
         scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -480,54 +497,59 @@
         dirLight.shadow.camera.bottom = -4;
         scene.add(dirLight);
 
-        // Subdued sky/hemi light to highlight top surfaces
-        const hemiLight = new THREE.HemisphereLight(0x7393b3, 0x4a3b32, 0.3);
+        const hemiLight = new THREE.HemisphereLight(0x7393b3, 0x4a3b32, 0.35);
         scene.add(hemiLight);
 
         // --- GAME WORLD CREATION ---
 
-        // 1. Terrain generation
+        // 1. Endless Terrain setup
         const terrainGroup = new THREE.Group();
         scene.add(terrainGroup);
 
-        const terrainBlocks = []; // To store top surfaces
+        const terrainBlocks = []; // procedural blocks
         const blockWidth = 1.6;
-        const startX = -16;
-        const endX = 16;
-        const blockCount = Math.ceil((endX - startX) / blockWidth) + 1;
+        const startX = -18;
+        const endX = 18;
+        const blockCount = Math.ceil((endX - startX) / blockWidth) + 2;
+
+        // Share geometries to save memory
+        const dirtGeometry = new THREE.BoxGeometry(blockWidth * 0.98, 1.0, 4.0);
+        const grassGeometry = new THREE.BoxGeometry(blockWidth * 0.98, 0.3, 4.05);
+
+        const dirtMaterial = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
+        const grassMaterial = new THREE.MeshStandardMaterial({ color: 0x477a34, roughness: 0.8 });
 
         for (let i = 0; i < blockCount; i++) {
             const x = startX + i * blockWidth;
-            // Variable heights to make it look rugged and mountainous
             const dirtHeight = 1.2 + Math.sin(i * 0.8) * 0.8 + Math.random() * 0.4;
             
-            // Dirt Mesh
-            const dirtGeom = new THREE.BoxGeometry(blockWidth * 0.98, dirtHeight, 4.0);
-            const dirtMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 }); // Dark brown
-            const dirtMesh = new THREE.Mesh(dirtGeom, dirtMat);
-            dirtMesh.position.set(x, dirtHeight / 2, 0);
+            const dirtMesh = new THREE.Mesh(dirtGeometry, dirtMaterial);
             dirtMesh.castShadow = true;
             dirtMesh.receiveShadow = true;
             terrainGroup.add(dirtMesh);
 
-            // Grass Cap Mesh
-            const grassHeight = 0.3;
-            const grassGeom = new THREE.BoxGeometry(blockWidth * 0.98, grassHeight, 4.05);
-            const grassMat = new THREE.MeshStandardMaterial({ color: 0x477a34, roughness: 0.8 }); // Green
-            const grassMesh = new THREE.Mesh(grassGeom, grassMat);
-            grassMesh.position.set(x, dirtHeight + grassHeight / 2, 0);
+            const grassMesh = new THREE.Mesh(grassGeometry, grassMaterial);
             grassMesh.castShadow = true;
             grassMesh.receiveShadow = true;
             terrainGroup.add(grassMesh);
 
+            // Scale and set positions initially
+            dirtMesh.scale.y = dirtHeight;
+            dirtMesh.position.set(x, dirtHeight / 2, 0);
+            grassMesh.position.set(x, dirtHeight + 0.15, 0);
+
             terrainBlocks.push({
                 x: x,
-                topHeight: dirtHeight + grassHeight
+                topHeight: dirtHeight + 0.3,
+                dirtHeight: dirtHeight,
+                dirtMesh: dirtMesh,
+                grassMesh: grassMesh
             });
+            terrainCounter = i;
         }
 
         // 2. Flood Water
-        const waterGeom = new THREE.BoxGeometry(38, 4.5, 6);
+        const waterGeom = new THREE.BoxGeometry(40, 4.5, 6);
         const waterMat = new THREE.MeshStandardMaterial({
             color: 0x0055ff,
             transparent: true,
@@ -537,169 +559,287 @@
             flatShading: true
         });
         const waterMesh = new THREE.Mesh(waterGeom, waterMat);
-        waterMesh.position.set(0, 0.0, 0); // Base position
+        waterMesh.position.set(0, 0.0, 0); 
         waterMesh.receiveShadow = true;
         scene.add(waterMesh);
 
-        // 3. Player (Helicopter)
+        // 3. Player: Mil Mi-17 military helicopter camo model (faces right / +X)
         const helicopter = new THREE.Group();
         
-        // Fuselage body
-        const fuselageGeom = new THREE.BoxGeometry(2.0, 1.0, 1.0);
-        const fuselageMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.4 }); // Red-orange rescue color
-        const fuselageMesh = new THREE.Mesh(fuselageGeom, fuselageMat);
-        fuselageMesh.castShadow = true;
-        fuselageMesh.receiveShadow = true;
-        helicopter.add(fuselageMesh);
+        // Camouflage military materials
+        const camoGreen = new THREE.MeshStandardMaterial({ color: 0x5a6358, roughness: 0.65 }); // Base olive camo
+        const camoDark = new THREE.MeshStandardMaterial({ color: 0x3d443b, roughness: 0.65 });  // Dark camo spot
+        const camoLight = new THREE.MeshStandardMaterial({ color: 0x7a8578, roughness: 0.65 }); // Light camo spot
+        const metalDark = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6 });  // Metal rotors
+        const glassMat = new THREE.MeshStandardMaterial({ color: 0x112233, roughness: 0.05, metalness: 0.9, transparent: true, opacity: 0.8 }); // cockpit windows
 
-        // Cockpit window
-        const windowGeom = new THREE.BoxGeometry(0.65, 0.6, 0.98);
-        const windowMat = new THREE.MeshStandardMaterial({ color: 0x33ccff, roughness: 0.1, metalness: 0.8 });
-        const windowMesh = new THREE.Mesh(windowGeom, windowMat);
-        windowMesh.position.set(0.7, 0.18, 0);
+        // Main Cabin Fuselage (horizontal cylinder aligned along X)
+        const cabinGeom = new THREE.CylinderGeometry(0.5, 0.45, 2.0, 12);
+        cabinGeom.rotateZ(Math.PI / 2);
+        const cabinMesh = new THREE.Mesh(cabinGeom, camoGreen);
+        cabinMesh.castShadow = true;
+        cabinMesh.receiveShadow = true;
+        helicopter.add(cabinMesh);
+
+        // Camo spot sleeves overlapping the cabin
+        const camoSleeve1 = new THREE.Mesh(new THREE.CylinderGeometry(0.505, 0.485, 0.6, 12), camoDark);
+        camoSleeve1.geometry.rotateZ(Math.PI / 2);
+        camoSleeve1.position.set(0.3, 0, 0);
+        camoSleeve1.castShadow = true;
+        helicopter.add(camoSleeve1);
+
+        const camoSleeve2 = new THREE.Mesh(new THREE.CylinderGeometry(0.485, 0.455, 0.5, 12), camoLight);
+        camoSleeve2.geometry.rotateZ(Math.PI / 2);
+        camoSleeve2.position.set(-0.5, 0, 0);
+        camoSleeve2.castShadow = true;
+        helicopter.add(camoSleeve2);
+
+        // Rounded Nose Cockpit (distorted sphere)
+        const noseGeom = new THREE.SphereGeometry(0.48, 12, 12);
+        const noseMesh = new THREE.Mesh(noseGeom, camoGreen);
+        noseMesh.scale.set(1.4, 0.9, 1.0);
+        noseMesh.position.set(1.0, -0.05, 0);
+        noseMesh.castShadow = true;
+        helicopter.add(noseMesh);
+
+        // Cockpit Window glass panel overlay
+        const windowGeom = new THREE.BoxGeometry(0.35, 0.4, 0.75);
+        const windowMesh = new THREE.Mesh(windowGeom, glassMat);
+        windowMesh.position.set(1.2, 0.15, 0);
+        windowMesh.rotation.z = -0.3; // match nose slope angle
         windowMesh.castShadow = true;
         helicopter.add(windowMesh);
 
-        // Tail boom
-        const tailGeom = new THREE.CylinderGeometry(0.12, 0.06, 1.6, 8);
-        tailGeom.rotateZ(Math.PI / 2);
-        const tailMat = new THREE.MeshStandardMaterial({ color: 0x777777, roughness: 0.6 });
-        const tailMesh = new THREE.Mesh(tailGeom, tailMat);
-        tailMesh.position.set(-1.6, 0.1, 0);
-        tailMesh.castShadow = true;
-        helicopter.add(tailMesh);
+        // Top Engine Housing
+        const engineGeom = new THREE.CylinderGeometry(0.25, 0.22, 1.3, 10);
+        engineGeom.rotateZ(Math.PI / 2);
+        const engineMesh = new THREE.Mesh(engineGeom, camoGreen);
+        engineMesh.position.set(0.1, 0.55, 0);
+        engineMesh.castShadow = true;
+        helicopter.add(engineMesh);
 
-        // Tail vertical fin
-        const finGeom = new THREE.BoxGeometry(0.2, 0.8, 0.08);
-        const finMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.4 });
-        const finMesh = new THREE.Mesh(finGeom, finMat);
-        finMesh.position.set(-2.3, 0.4, 0);
+        // Engine camo spot
+        const engineCamo = new THREE.Mesh(new THREE.CylinderGeometry(0.255, 0.245, 0.5, 10), camoDark);
+        engineCamo.geometry.rotateZ(Math.PI / 2);
+        engineCamo.position.set(0.3, 0.55, 0);
+        engineCamo.castShadow = true;
+        helicopter.add(engineCamo);
+
+        // Twin Front Air Intakes
+        const intakeGeom = new THREE.CylinderGeometry(0.13, 0.13, 0.25, 8);
+        intakeGeom.rotateZ(Math.PI / 2);
+        const intakeL = new THREE.Mesh(intakeGeom, metalDark);
+        intakeL.position.set(0.75, 0.58, 0.13);
+        intakeL.castShadow = true;
+        helicopter.add(intakeL);
+
+        const intakeR = new THREE.Mesh(intakeGeom, metalDark);
+        intakeR.position.set(0.75, 0.58, -0.13);
+        intakeR.castShadow = true;
+        helicopter.add(intakeR);
+
+        // Twin Rear Engine Exhaust ports
+        const exhaustGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.2, 8);
+        exhaustGeom.rotateX(Math.PI / 2);
+
+        const exhaustL = new THREE.Mesh(exhaustGeom, metalDark);
+        exhaustL.position.set(-0.5, 0.52, 0.22);
+        exhaustL.rotation.y = 0.3;
+        exhaustL.castShadow = true;
+        helicopter.add(exhaustL);
+
+        const exhaustR = new THREE.Mesh(exhaustGeom, metalDark);
+        exhaustR.position.set(-0.5, 0.52, -0.22);
+        exhaustR.rotation.y = -0.3;
+        exhaustR.castShadow = true;
+        helicopter.add(exhaustR);
+
+        // Side External Fuel Tanks (low mounted)
+        const tankGeom = new THREE.CylinderGeometry(0.13, 0.13, 1.2, 8);
+        tankGeom.rotateZ(Math.PI / 2);
+
+        const tankL = new THREE.Mesh(tankGeom, camoGreen);
+        tankL.position.set(0.1, -0.32, 0.52);
+        tankL.castShadow = true;
+        helicopter.add(tankL);
+
+        const tankR = new THREE.Mesh(tankGeom, camoGreen);
+        tankR.position.set(0.1, -0.32, -0.52);
+        tankR.castShadow = true;
+        helicopter.add(tankR);
+
+        // Tail Boom (tapered horizontal cylinder)
+        const boomGeom = new THREE.CylinderGeometry(0.32, 0.08, 2.2, 10);
+        boomGeom.rotateZ(Math.PI / 2);
+        const boomMesh = new THREE.Mesh(boomGeom, camoGreen);
+        boomMesh.position.set(-1.9, 0.18, 0);
+        boomMesh.castShadow = true;
+        helicopter.add(boomMesh);
+
+        // Tail boom camo detail
+        const boomCamo = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.17, 0.7, 10), camoLight);
+        boomCamo.geometry.rotateZ(Math.PI / 2);
+        boomCamo.position.set(-1.6, 0.2, 0);
+        boomCamo.castShadow = true;
+        helicopter.add(boomCamo);
+
+        // Vertical tail fin slanted backwards
+        const finGeom = new THREE.BoxGeometry(0.25, 0.85, 0.08);
+        const finMesh = new THREE.Mesh(finGeom, camoGreen);
+        finMesh.position.set(-3.0, 0.72, 0);
+        finMesh.rotation.z = 0.35;
         finMesh.castShadow = true;
         helicopter.add(finMesh);
 
-        // Main rotor shaft
-        const shaftGeom = new THREE.CylinderGeometry(0.04, 0.04, 0.4, 8);
-        const shaftMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-        const shaftMesh = new THREE.Mesh(shaftGeom, shaftMat);
-        shaftMesh.position.set(0, 0.7, 0);
+        // Tricycle Landing Gear Struts & Wheels
+        const strutMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3 });
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 });
+
+        // Front dual-wheel assembly
+        const noseStrutGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 6);
+        const noseStrut = new THREE.Mesh(noseStrutGeom, strutMat);
+        noseStrut.position.set(0.9, -0.6, 0);
+        noseStrut.castShadow = true;
+        helicopter.add(noseStrut);
+
+        const noseWheelGeom = new THREE.CylinderGeometry(0.14, 0.14, 0.05, 8);
+        noseWheelGeom.rotateX(Math.PI / 2);
+        const noseWheelL = new THREE.Mesh(noseWheelGeom, wheelMat);
+        noseWheelL.position.set(0.9, -0.85, 0.04);
+        noseWheelL.castShadow = true;
+        helicopter.add(noseWheelL);
+
+        const noseWheelR = new THREE.Mesh(noseWheelGeom, wheelMat);
+        noseWheelR.position.set(0.9, -0.85, -0.04);
+        noseWheelR.castShadow = true;
+        helicopter.add(noseWheelR);
+
+        // Rear main wheels & support struts (left/right)
+        const rearStrutGeom = new THREE.CylinderGeometry(0.025, 0.025, 0.55, 6);
+        rearStrutGeom.rotateZ(0.25);
+
+        const rearStrutL = new THREE.Mesh(rearStrutGeom, strutMat);
+        rearStrutL.position.set(-0.3, -0.6, 0.5);
+        rearStrutL.rotation.x = 0.3; 
+        rearStrutL.castShadow = true;
+        helicopter.add(rearStrutL);
+
+        const rearStrutR = new THREE.Mesh(rearStrutGeom, strutMat);
+        rearStrutR.position.set(-0.3, -0.6, -0.5);
+        rearStrutR.rotation.x = -0.3;
+        rearStrutR.castShadow = true;
+        helicopter.add(rearStrutR);
+
+        const mainWheelGeom = new THREE.CylinderGeometry(0.22, 0.22, 0.09, 8);
+        mainWheelGeom.rotateX(Math.PI / 2);
+
+        const mainWheelL = new THREE.Mesh(mainWheelGeom, wheelMat);
+        mainWheelL.position.set(-0.3, -0.85, 0.62);
+        mainWheelL.castShadow = true;
+        helicopter.add(mainWheelL);
+
+        const mainWheelR = new THREE.Mesh(mainWheelGeom, wheelMat);
+        mainWheelR.position.set(-0.3, -0.85, -0.62);
+        mainWheelR.castShadow = true;
+        helicopter.add(mainWheelR);
+
+        // Main Rotor Shaft
+        const shaftGeom = new THREE.CylinderGeometry(0.045, 0.045, 0.25, 8);
+        const shaftMesh = new THREE.Mesh(shaftGeom, metalDark);
+        shaftMesh.position.set(0.2, 0.72, 0);
         shaftMesh.castShadow = true;
         helicopter.add(shaftMesh);
 
-        // Main rotor blades
-        const rotorGeom = new THREE.BoxGeometry(3.6, 0.02, 0.18);
-        const rotorMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
-        const rotorMesh = new THREE.Mesh(rotorGeom, rotorMat);
-        rotorMesh.position.set(0, 0.9, 0);
-        rotorMesh.castShadow = true;
-        helicopter.add(rotorMesh);
+        // 5-Blade Main Rotor
+        const mainRotor = new THREE.Group();
+        mainRotor.position.set(0.2, 0.85, 0);
+        helicopter.add(mainRotor);
 
-        // Tail rotor blades
-        const tailRotorGeom = new THREE.BoxGeometry(0.08, 0.7, 0.02);
-        const tailRotorMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-        const tailRotorMesh = new THREE.Mesh(tailRotorGeom, tailRotorMat);
-        tailRotorMesh.position.set(-2.3, 0.4, 0.12);
-        tailRotorMesh.castShadow = true;
-        helicopter.add(tailRotorMesh);
+        const bladeGeom = new THREE.BoxGeometry(1.8, 0.015, 0.12);
+        bladeGeom.translate(0.9, 0, 0); // translate so origin is at the blade root
 
-        // Landing gear / skids
-        const skidLegGeom = new THREE.CylinderGeometry(0.04, 0.04, 0.4, 8);
-        const skidLegMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
-        
-        const legFL = new THREE.Mesh(skidLegGeom, skidLegMat);
-        legFL.position.set(0.5, -0.6, 0.35);
-        legFL.castShadow = true;
-        helicopter.add(legFL);
+        for (let i = 0; i < 5; i++) {
+            const angle = (i * Math.PI * 2) / 5;
+            const blade = new THREE.Mesh(bladeGeom, metalDark);
+            blade.rotation.y = angle;
+            blade.castShadow = true;
+            mainRotor.add(blade);
+        }
 
-        const legRL = new THREE.Mesh(skidLegGeom, skidLegMat);
-        legRL.position.set(-0.5, -0.6, 0.35);
-        legRL.castShadow = true;
-        helicopter.add(legRL);
+        // 3-Blade Tail Rotor (mounted on the vertical tail fin right side)
+        const tailRotor = new THREE.Group();
+        tailRotor.position.set(-3.0, 0.75, 0.12);
+        helicopter.add(tailRotor);
 
-        const legFR = new THREE.Mesh(skidLegGeom, skidLegMat);
-        legFR.position.set(0.5, -0.6, -0.35);
-        legFR.castShadow = true;
-        helicopter.add(legFR);
+        const tailBladeGeom = new THREE.BoxGeometry(0.38, 0.05, 0.01);
+        tailBladeGeom.translate(0.19, 0, 0);
 
-        const legRR = new THREE.Mesh(skidLegGeom, skidLegMat);
-        legRR.position.set(-0.5, -0.6, -0.35);
-        legRR.castShadow = true;
-        helicopter.add(legRR);
+        for (let i = 0; i < 3; i++) {
+            const angle = (i * Math.PI * 2) / 3;
+            const blade = new THREE.Mesh(tailBladeGeom, metalDark);
+            blade.rotation.z = angle;
+            blade.castShadow = true;
+            tailRotor.add(blade);
+        }
 
-        const skidRailGeom = new THREE.BoxGeometry(2.2, 0.06, 0.08);
-        const skidRailMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
-
-        const railL = new THREE.Mesh(skidRailGeom, skidRailMat);
-        railL.position.set(0, -0.8, 0.35);
-        railL.castShadow = true;
-        helicopter.add(railL);
-
-        const railR = new THREE.Mesh(skidRailGeom, skidRailMat);
-        railR.position.set(0, -0.8, -0.35);
-        railR.castShadow = true;
-        helicopter.add(railR);
-
-        // Front headlight searchlight
-        const headlightGeom = new THREE.SphereGeometry(0.12, 8, 8);
-        const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const headlightMesh = new THREE.Mesh(headlightGeom, headlightMat);
-        headlightMesh.position.set(1.0, -0.2, 0);
-        helicopter.add(headlightMesh);
-
+        // Spotlight
         const searchlight = new THREE.SpotLight(0xffffff, 6, 18, Math.PI / 5, 0.5, 1);
-        searchlight.position.set(1.0, -0.2, 0);
+        searchlight.position.set(1.1, -0.2, 0);
         searchlight.castShadow = false;
         helicopter.add(searchlight);
 
         const searchlightTarget = new THREE.Object3D();
-        searchlightTarget.position.set(3, -7, 0);
+        searchlightTarget.position.set(4, -6, 0); // Point forward-downward
         helicopter.add(searchlightTarget);
         searchlight.target = searchlightTarget;
 
         scene.add(helicopter);
 
-        // 4. Rescue Target (Omino)
-        const omino = new THREE.Group();
+        // 4. Procedural Multi-Omini System
+        const ominiArray = [];
 
-        // Legs/Pants
+        // Omini shared parts
         const legsGeom = new THREE.CylinderGeometry(0.12, 0.12, 0.35, 8);
-        const legsMat = new THREE.MeshStandardMaterial({ color: 0x1a3399, roughness: 0.8 }); // Blue pants
-        const legsMesh = new THREE.Mesh(legsGeom, legsMat);
-        legsMesh.position.set(0, 0.175, 0);
-        legsMesh.castShadow = true;
-        omino.add(legsMesh);
-
-        // Life Jacket Torso
         const torsoGeom = new THREE.CylinderGeometry(0.15, 0.15, 0.35, 8);
-        const torsoMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.7 }); // Bright orange life vest
-        const torsoMesh = new THREE.Mesh(torsoGeom, torsoMat);
-        torsoMesh.position.set(0, 0.5, 0);
-        torsoMesh.castShadow = true;
-        omino.add(torsoMesh);
-
-        // Skin Head
         const headGeom = new THREE.SphereGeometry(0.11, 8, 8);
-        const headMat = new THREE.MeshStandardMaterial({ color: 0xffccaa, roughness: 0.8 });
-        const headMesh = new THREE.Mesh(headGeom, headMat);
-        headMesh.position.set(0, 0.75, 0);
-        headMesh.castShadow = true;
-        omino.add(headMesh);
 
-        scene.add(omino);
-        let currentBlockIndex = 0;
+        const legsMat = new THREE.MeshStandardMaterial({ color: 0x1a3399, roughness: 0.8 }); // pants
+        const torsoMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.7 }); // orange vest
+        const headMat = new THREE.MeshStandardMaterial({ color: 0xffccaa, roughness: 0.8 }); // skin tone
 
-        function spawnOmino() {
-            // Pick a random block from the middle zone (avoid strict edges)
-            const index = Math.floor(2 + Math.random() * (terrainBlocks.length - 4));
-            currentBlockIndex = index;
-            const block = terrainBlocks[index];
-            omino.position.set(block.x, block.topHeight, 0);
-            omino.scale.set(1, 1, 1);
+        function createOminoMesh() {
+            const group = new THREE.Group();
+            
+            const legsMesh = new THREE.Mesh(legsGeom, legsMat);
+            legsMesh.position.set(0, 0.175, 0);
+            legsMesh.castShadow = true;
+            group.add(legsMesh);
+
+            const torsoMesh = new THREE.Mesh(torsoGeom, torsoMat);
+            torsoMesh.position.set(0, 0.5, 0);
+            torsoMesh.castShadow = true;
+            group.add(torsoMesh);
+
+            const headMesh = new THREE.Mesh(headGeom, headMat);
+            headMesh.position.set(0, 0.75, 0);
+            headMesh.castShadow = true;
+            group.add(headMesh);
+
+            scene.add(group);
+            return group;
         }
 
-        // Initialize first omino
-        spawnOmino();
+        function spawnOminoOnBlock(block) {
+            const mesh = createOminoMesh();
+            mesh.position.set(block.x, block.topHeight, 0);
+            ominiArray.push({
+                mesh: mesh,
+                x: block.x,
+                y: block.topHeight
+            });
+        }
 
-        // 5. Obstacles (Drones and Birds)
+        // 5. Obstacles (Drones and Birds) - Moving relative to scroll speed
         const obstacles = [];
         const obstacleTypes = ['drone', 'bird'];
 
@@ -707,14 +847,12 @@
             const group = new THREE.Group();
             
             if (type === 'drone') {
-                // Drone core body
                 const bodyGeom = new THREE.BoxGeometry(0.65, 0.22, 0.65);
                 const bodyMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.5, metalness: 0.7 });
                 const bodyMesh = new THREE.Mesh(bodyGeom, bodyMat);
                 bodyMesh.castShadow = true;
                 group.add(bodyMesh);
 
-                // Armatures
                 const armGeom = new THREE.BoxGeometry(0.85, 0.04, 0.08);
                 const armMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2b });
                 
@@ -726,7 +864,6 @@
                 arm2.rotation.y = -Math.PI / 4;
                 group.add(arm2);
 
-                // Tiny rotors
                 const rotGeom = new THREE.BoxGeometry(0.32, 0.01, 0.04);
                 const rotMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
                 const rotors = [];
@@ -747,25 +884,22 @@
 
                 group.userData = { rotors: rotors, type: 'drone' };
             } else {
-                // Flying bird
                 const bodyGeom = new THREE.CylinderGeometry(0, 0.2, 0.7, 6);
-                bodyGeom.rotateZ(-Math.PI / 2); // default face right
-                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xdd2222, roughness: 0.7 }); // Red bird
+                bodyGeom.rotateZ(Math.PI / 2); // face left towards player
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xdd2222, roughness: 0.7 });
                 const bodyMesh = new THREE.Mesh(bodyGeom, bodyMat);
                 bodyMesh.castShadow = true;
                 group.add(bodyMesh);
 
-                // Left Wing
                 const wingGeom = new THREE.BoxGeometry(0.12, 0.02, 0.5);
                 const wingMat = new THREE.MeshStandardMaterial({ color: 0xaa1111 });
                 
                 const wingL = new THREE.Mesh(wingGeom, wingMat);
-                wingL.position.set(-0.1, 0.05, 0.25);
+                wingL.position.set(0.1, 0.05, 0.25);
                 group.add(wingL);
 
-                // Right Wing
                 const wingR = new THREE.Mesh(wingGeom, wingMat);
-                wingR.position.set(-0.1, 0.05, -0.25);
+                wingR.position.set(0.1, 0.05, -0.25);
                 group.add(wingR);
 
                 group.userData = { wingL: wingL, wingR: wingR, type: 'bird' };
@@ -776,9 +910,6 @@
         }
 
         function spawnObstacle(obs) {
-            const spawnRight = Math.random() > 0.5;
-            obs.direction = spawnRight ? -1 : 1;
-
             const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
             
             if (obs.mesh) {
@@ -788,46 +919,36 @@
             obs.mesh = buildObstacleMesh(type);
             obs.type = type;
 
-            const xPos = spawnRight ? 15.0 : -15.0;
-            const yPos = 3.5 + Math.random() * 4.0; // height flight zone
+            const xPos = 16.0; // always spawn ahead of player
+            const yPos = 3.5 + Math.random() * 4.0;
             obs.mesh.position.set(xPos, yPos, 0);
 
-            // Turn mesh based on speed direction
-            if (obs.direction === 1) {
-                obs.mesh.rotation.y = 0;
-            } else {
-                obs.mesh.rotation.y = Math.PI;
-            }
-
-            // Speed up based on current score
+            // Speed scales up with score
             const diffMultiplier = 1.0 + score * 0.09;
-            obs.speed = (3.5 + Math.random() * 2.5) * diffMultiplier;
+            obs.flightSpeed = (2.5 + Math.random() * 2.0) * diffMultiplier;
         }
 
         function initObstacles() {
-            // Clear existing
             obstacles.forEach(o => {
                 if (o.mesh) scene.remove(o.mesh);
             });
             obstacles.length = 0;
 
-            // Spawn 3 active obstacles
             for (let i = 0; i < 3; i++) {
-                const obs = { mesh: null, type: '', direction: 0, speed: 0 };
+                const obs = { mesh: null, type: '', flightSpeed: 0 };
                 spawnObstacle(obs);
-                // Stagger X positions across the map
-                obs.mesh.position.x = -10 + i * 7.5 + (Math.random() - 0.5) * 3;
+                obs.mesh.position.x = 10 + i * 8 + (Math.random() - 0.5) * 3;
                 obstacles.push(obs);
             }
         }
 
-        // 6. Rescue Floating Particle System
+        // 6. Rescue Particles
         const rescueParticles = [];
 
         function triggerRescueParticles(x, y) {
             const pCount = 12;
             const geom = new THREE.BoxGeometry(0.12, 0.12, 0.12);
-            const mat = new THREE.MeshBasicMaterial({ color: 0x00ff66 }); // Green sparks
+            const mat = new THREE.MeshBasicMaterial({ color: 0x00ff66 });
 
             for (let i = 0; i < pCount; i++) {
                 const mesh = new THREE.Mesh(geom, mat);
@@ -840,7 +961,7 @@
                 rescueParticles.push({
                     mesh: mesh,
                     vx: Math.cos(angle) * spd,
-                    vy: Math.sin(angle) * spd + 2.0, // burst upwards
+                    vy: Math.sin(angle) * spd + 2.0,
                     vz: (Math.random() - 0.5) * 2.0,
                     life: 1.0
                 });
@@ -854,7 +975,7 @@
                 p.mesh.position.y += p.vy * dt;
                 p.mesh.position.z += p.vz * dt;
 
-                p.vy -= 9.8 * dt; // gravity
+                p.vy -= 9.8 * dt;
                 p.life -= dt;
                 p.mesh.scale.setScalar(Math.max(0, p.life));
 
@@ -865,9 +986,8 @@
             }
         }
 
-        // --- UI TOAST (FLOATING ARCADE MESSAGES) ---
+        // --- UI TOAST (FLOATING MESSAGES) ---
         function createWorldToast(message, color, x, y) {
-            // Project 3D coordinate to 2D screen coordinate
             const vector = new THREE.Vector3(x, y, 0);
             vector.project(camera);
 
@@ -890,7 +1010,6 @@
 
             document.body.appendChild(div);
 
-            // Animate float upwards and disappear
             let opacity = 1.0;
             let currentY = yPct;
             const interval = setInterval(() => {
@@ -917,7 +1036,7 @@
 
         // --- PLAYER CONTROLS (MOUSE/TOUCH) ---
         window.addEventListener('pointerdown', (e) => {
-            if (e.target.closest('button')) return; // ignore clicks on start/gameover buttons
+            if (e.target.closest('button')) return;
             
             if (gameState === 'PLAYING') {
                 isDescending = true;
@@ -932,7 +1051,6 @@
             isDescending = false;
         });
 
-        // Prevent scrolling on mobile touch events
         window.addEventListener('touchstart', (e) => {
             if (gameState === 'PLAYING') e.preventDefault();
         }, { passive: false });
@@ -948,30 +1066,43 @@
         function startPlaying() {
             score = 0;
             timer = 30.0;
+            distanceTraveled = 0;
             isDescending = false;
             isInvincible = false;
             invincibilityTimer = 0;
             helicopter.visible = true;
 
-            // Reset heli position
-            helicopterX = 0;
+            // Reset heli vertical position and angles
             helicopterY = 7.5;
             verticalVelocity = 0;
-            helicopterDirection = 1;
             helicopter.position.set(helicopterX, helicopterY, 0);
             helicopter.rotation.set(0, 0, 0);
 
-            // Clear old particles
+            // Reset rotors
+            mainRotorSpeed = 0.8;
+            tailRotorSpeed = 0.9;
+
+            // Reset dynamic scrolling speed
+            currentScrollSpeed = baseScrollSpeed;
+
+            // Clear old particles & targets
             rescueParticles.forEach(p => scene.remove(p.mesh));
             rescueParticles.length = 0;
 
-            // Reset targets & obstacles
-            spawnOmino();
+            ominiArray.forEach(o => scene.remove(o.mesh));
+            ominiArray.length = 0;
+
+            // Spawn first targets on middle blocks
+            spawnOminoOnBlock(terrainBlocks[10]);
+            spawnOminoOnBlock(terrainBlocks[16]);
+
+            // Reset obstacles
             initObstacles();
 
             // Update UI elements
             document.getElementById('nepal-flood-score').innerText = '000';
             document.getElementById('nepal-flood-timer').innerText = '30.0';
+            document.getElementById('nepal-flood-distance').innerText = '0 m';
             
             document.getElementById('nepal-flood-start').style.display = 'none';
             document.getElementById('nepal-flood-gameover').style.display = 'none';
@@ -982,6 +1113,7 @@
 
         function triggerGameOver() {
             gameState = 'GAMEOVER';
+            currentScrollSpeed = 0.0;
             Sound.stopMotor();
             Sound.playGameOver();
             
@@ -992,6 +1124,7 @@
             }
 
             document.getElementById('nepal-flood-final-score').innerText = score;
+            document.getElementById('nepal-flood-final-distance').innerText = Math.floor(distanceTraveled);
             document.getElementById('nepal-flood-high-score').innerText = highScore;
 
             document.getElementById('nepal-flood-ui-container').style.display = 'none';
@@ -1018,38 +1151,42 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            const dt = Math.min(clock.getDelta(), 0.1); // cap dt to prevent huge lag skips
+            const dt = Math.min(clock.getDelta(), 0.1); 
             const time = clock.getElapsedTime();
 
-            // 1. Hover/Wave animations (Always run, even in menus)
-            // Water rises and falls in a wave
-            waterMesh.position.y = -0.2 + Math.sin(time * 1.6) * 0.18;
-            waterMesh.rotation.z = Math.sin(time * 0.8) * 0.015; // slight rocking
+            // 1. Water waves animation (Always run)
+            waterMesh.position.y = -0.25 + Math.sin(time * 1.7) * 0.16;
+            waterMesh.rotation.z = Math.sin(time * 0.8) * 0.012;
 
-            // Rotor spin
-            rotorMesh.rotation.y += 0.75;
-            tailRotorMesh.rotation.z += 0.85;
-
-            // Rescue Target (Omino) breathing/bobbing
-            omino.scale.y = 1.0 + Math.sin(time * 6.0) * 0.06;
-            omino.position.y = terrainBlocks[currentBlockIndex].topHeight + Math.sin(time * 6.0) * 0.05;
+            // Rotors update
+            mainRotor.rotation.y += mainRotorSpeed;
+            tailRotor.rotation.z += tailRotorSpeed;
 
             // Particles update
             updateRescueParticles(dt);
 
-            // 2. State-Specific updates
             if (gameState === 'START') {
-                // Helicopter hovers gently in the middle
-                helicopter.position.set(0, 6.0 + Math.sin(time * 2.0) * 0.25, 0);
-                helicopter.rotation.y = 0;
-                helicopter.rotation.z = Math.sin(time * 1.5) * 0.02;
+                // Helicopter hovering in place on the left side
+                helicopter.position.set(helicopterX, 6.0 + Math.sin(time * 2.0) * 0.2, 0);
+                helicopter.rotation.set(0, 0, Math.sin(time * 1.5) * 0.02);
                 
-                // Slow subtle camera tilt
-                camera.position.x = Math.sin(time * 0.3) * 1.5;
+                // Slow subtle camera movement
+                camera.position.x = Math.sin(time * 0.3) * 1.2;
                 camera.lookAt(0, 5, 0);
 
+                // Slowly scroll background terrain
+                terrainBlocks.forEach(block => {
+                    block.x -= 1.0 * dt; // slow scroll
+                    if (block.x < -18.0) {
+                        const rightmostX = terrainBlocks[terrainBlocks.length - 1].x;
+                        block.x = rightmostX + blockWidth;
+                    }
+                    block.dirtMesh.position.x = block.x;
+                    block.grassMesh.position.x = block.x;
+                });
+
             } else if (gameState === 'PLAYING') {
-                // TIMER countdown
+                // TIMER & Distance Count
                 timer -= dt;
                 if (timer <= 0) {
                     timer = 0;
@@ -1057,51 +1194,89 @@
                 }
                 document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
 
-                // HELICOPTER MOVEMENT (HORIZONTAL)
-                helicopterX += helicopterSpeed * helicopterDirection * dt;
+                // Speed increases dynamically based on rescues
+                currentScrollSpeed = baseScrollSpeed + score * 0.18;
+                distanceTraveled += currentScrollSpeed * dt;
+                document.getElementById('nepal-flood-distance').innerText = `${Math.floor(distanceTraveled)} m`;
 
-                // Bounce at edges and turn mesh to face direction
-                if (helicopterX >= maxX) {
-                    helicopterX = maxX;
-                    helicopterDirection = -1;
-                } else if (helicopterX <= minX) {
-                    helicopterX = minX;
-                    helicopterDirection = 1;
+                // SCROLL INFINITE TERRAIN
+                terrainBlocks.forEach(block => {
+                    block.x -= currentScrollSpeed * dt;
+                    block.dirtMesh.position.x = block.x;
+                    block.grassMesh.position.x = block.x;
+                });
+
+                // Recycle off-screen terrain blocks to the right
+                if (terrainBlocks[0].x < -18.0) {
+                    const block = terrainBlocks.shift();
+                    const rightmostX = terrainBlocks[terrainBlocks.length - 1].x;
+                    const newX = rightmostX + blockWidth;
+
+                    // Generate new height based on deterministic-looking noise
+                    terrainCounter++;
+                    const newDirtHeight = 1.2 + Math.sin(terrainCounter * 0.7) * 0.8 + Math.random() * 0.4;
+                    
+                    block.x = newX;
+                    block.dirtHeight = newDirtHeight;
+                    block.topHeight = newDirtHeight + 0.3;
+
+                    block.dirtMesh.scale.y = newDirtHeight;
+                    block.dirtMesh.position.set(newX, newDirtHeight / 2, 0);
+                    block.grassMesh.position.set(newX, newDirtHeight + 0.15, 0);
+
+                    terrainBlocks.push(block);
+
+                    // Chance to spawn omino on the newly recycled block
+                    if (Math.random() < 0.18 && ominiArray.length < 3) {
+                        spawnOminoOnBlock(block);
+                    }
                 }
-                
-                // Rotation angle mapping
-                const targetYRot = helicopterDirection === 1 ? 0 : Math.PI;
-                // Interpolate Y rotation slightly for smooth turns
-                helicopter.rotation.y = THREE.MathUtils.lerp(helicopter.rotation.y, targetYRot, 0.15);
 
-                // HELICOPTER MOVEMENT (VERTICAL DESCEND/ASCEND)
+                // UPDATE PROCEDURAL OMINI
+                for (let i = ominiArray.length - 1; i >= 0; i--) {
+                    const o = ominiArray[i];
+                    o.x -= currentScrollSpeed * dt;
+
+                    // Bobbing animations
+                    const bob = Math.sin(time * 6.0 + o.x) * 0.05;
+                    o.mesh.position.set(o.x, o.y + bob, 0);
+                    o.mesh.scale.y = 1.0 + Math.sin(time * 6.0 + o.x) * 0.05;
+
+                    // Remove if scrolled off-screen left
+                    if (o.x < -16.0) {
+                        scene.remove(o.mesh);
+                        ominiArray.splice(i, 1);
+                    }
+                }
+
+                // HELICOPTER FLIGHT CONTROL (Vertical)
                 if (isDescending) {
                     verticalVelocity -= gravity * dt;
                 } else {
                     verticalVelocity += lift * dt;
                 }
 
-                // Apply drag & clamp speed
-                verticalVelocity *= 0.97;
+                verticalVelocity *= 0.97; // air drag
                 verticalVelocity = THREE.MathUtils.clamp(verticalVelocity, -maxVerticalSpeed, maxVerticalSpeed);
 
                 helicopterY += verticalVelocity * dt;
                 helicopterY = THREE.MathUtils.clamp(helicopterY, minY, maxY);
 
-                helicopter.position.set(helicopterX, helicopterY, 0);
+                // Slight hover oscillation on X, keep X mostly fixed at -5
+                const hoverOffset = Math.sin(time * 2.5) * 0.1;
+                helicopter.position.set(helicopterX + hoverOffset, helicopterY, 0);
 
-                // Update sound engine pitch dynamically based on flight
+                // Modulate engine audio frequency based on speed
                 Sound.updateMotor(verticalVelocity);
 
-                // Dynamic visual tilt of the helicopter based on vertical movement
-                const tiltAngle = -verticalVelocity * 0.035 * helicopterDirection;
-                helicopter.rotation.z = THREE.MathUtils.lerp(helicopter.rotation.z, tiltAngle, 0.2);
+                // Dynamic vertical flight tilt
+                const targetTilt = -verticalVelocity * 0.035;
+                helicopter.rotation.z = THREE.MathUtils.lerp(helicopter.rotation.z, targetTilt, 0.2);
 
-                // HEADLIGHT LOOK-FORWARD TILT
-                // Spotlight target points slightly ahead in direction of flight
-                searchlightTarget.position.x = 4.0 * helicopterDirection;
+                // Headlight points forward-downward
+                searchlightTarget.position.y = -6.0 - verticalVelocity * 0.1;
 
-                // INVINCIBILITY FLASHES
+                // INVINCIBILITY VISUAL FLASH
                 if (isInvincible) {
                     invincibilityTimer -= dt;
                     const flashSpeed = 0.12;
@@ -1113,9 +1288,10 @@
                     }
                 }
 
-                // UPDATE OBSTACLES (DRONES/BIRDS)
+                // UPDATE FLYING OBSTACLES (Speed combined with scroll speed)
                 obstacles.forEach(obs => {
-                    obs.mesh.position.x += obs.speed * obs.direction * dt;
+                    const totalVx = -(currentScrollSpeed + obs.flightSpeed);
+                    obs.mesh.position.x += totalVx * dt;
 
                     // Obstacle visuals
                     if (obs.type === 'drone') {
@@ -1130,42 +1306,43 @@
                         }
                     }
 
-                    // Loop back or recycle off-screen obstacles
-                    if (obs.direction === 1 && obs.mesh.position.x > 16.0) {
-                        spawnObstacle(obs);
-                    } else if (obs.direction === -1 && obs.mesh.position.x < -16.0) {
+                    // Recycle if scrolled past left border
+                    if (obs.mesh.position.x < -16.0) {
                         spawnObstacle(obs);
                     }
                 });
 
-                // COLLISION DETECTION (Bounding Boxes)
+                // COLLISION DETECTION (World space bounding boxes)
                 helicopter.updateMatrixWorld(true);
-                const heliBox = new THREE.Box3().setFromObject(fuselageMesh);
+                const heliBox = new THREE.Box3().setFromObject(cabinMesh); // collide on fuselage cabin
 
-                // A. Target Rescue collision
-                omino.updateMatrixWorld(true);
-                const ominoBox = new THREE.Box3().setFromObject(omino);
-                if (heliBox.intersectsBox(ominoBox)) {
-                    // Success rescue
-                    score += 1;
-                    timer += 3.0;
-                    document.getElementById('nepal-flood-score').innerText = String(score).padStart(3, '0');
+                // A. Omini rescue check
+                for (let i = ominiArray.length - 1; i >= 0; i--) {
+                    const o = ominiArray[i];
+                    o.mesh.updateMatrixWorld(true);
+                    const oBox = new THREE.Box3().setFromObject(o.mesh);
 
-                    // Floating positive message
-                    createWorldToast('+3s RESCUE', '#00ff66', omino.position.x, omino.position.y + 1.2);
-                    triggerRescueParticles(omino.position.x, omino.position.y + 0.3);
+                    if (heliBox.intersectsBox(oBox)) {
+                        // Rescued successfully!
+                        score += 1;
+                        timer += 3.0;
+                        document.getElementById('nepal-flood-score').innerText = String(score).padStart(3, '0');
 
-                    // Sound & Haptics feedback
-                    Sound.playRescue();
-                    if (navigator.vibrate) {
-                        navigator.vibrate(35); // short rumble on rescue
+                        createWorldToast('+3s RESCUE', '#00ff66', o.x, o.y + 1.2);
+                        triggerRescueParticles(o.x, o.y + 0.3);
+
+                        Sound.playRescue();
+                        if (navigator.vibrate) {
+                            navigator.vibrate(35);
+                        }
+
+                        // Remove omino
+                        scene.remove(o.mesh);
+                        ominiArray.splice(i, 1);
                     }
-
-                    // Re-spawn target
-                    spawnOmino();
                 }
 
-                // B. Obstacle Collision
+                // B. Obstacle hazard collision check
                 if (!isInvincible) {
                     for (let i = 0; i < obstacles.length; i++) {
                         const obs = obstacles[i];
@@ -1173,48 +1350,48 @@
                         const obsBox = new THREE.Box3().setFromObject(obs.mesh);
 
                         if (heliBox.intersectsBox(obsBox)) {
-                            // Hit by drone/bird
+                            // Hit obstacle
                             timer -= 3.0;
                             if (timer < 0) timer = 0;
                             document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
 
-                            // Trigger invincibility + feedback
                             isInvincible = true;
                             invincibilityTimer = 1.2;
 
                             triggerScreenFlash();
                             createWorldToast('-3s DANGER', '#ff3333', obs.mesh.position.x, obs.mesh.position.y);
 
-                            // Sound & Haptics feedback
                             Sound.playDamage();
                             if (navigator.vibrate) {
-                                navigator.vibrate([80, 50, 80]); // double buzz on damage
+                                navigator.vibrate([80, 50, 80]);
                             }
 
-                            // Instantly recycle hit obstacle so player doesn't take multiple hits
+                            // Recycle hit obstacle
                             spawnObstacle(obs);
                             break;
                         }
                     }
                 }
 
-                // Camera follow helicopter slightly on X axis for subtle parallax feeling
-                camera.position.x = THREE.MathUtils.lerp(camera.position.x, helicopterX * 0.15, 0.1);
-                camera.lookAt(helicopterX * 0.1, 5, 0);
+                // Camera smoothly locks centering
+                camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0.0, 0.05);
+                camera.lookAt(0, 5, 0);
 
             } else if (gameState === 'GAMEOVER') {
-                // Helicopter falls and stops on water level Y=1.8
-                if (helicopterY > 1.8) {
+                // Rotors decelerate to a stop
+                mainRotorSpeed = THREE.MathUtils.lerp(mainRotorSpeed, 0, 0.02);
+                tailRotorSpeed = THREE.MathUtils.lerp(tailRotorSpeed, 0, 0.02);
+
+                // Helicopter crash-falls down to water Y=1.7
+                if (helicopterY > 1.7) {
                     verticalVelocity -= gravity * dt;
                     helicopterY += verticalVelocity * dt;
-                    if (helicopterY < 1.8) helicopterY = 1.8;
+                    if (helicopterY < 1.7) helicopterY = 1.7;
                     helicopter.position.y = helicopterY;
                 }
-                
-                // Tilt the helicopter sideways to show crash/disable
-                helicopter.rotation.z = THREE.MathUtils.lerp(helicopter.rotation.z, 0.4 * helicopterDirection, 0.1);
-                
-                // Keep background assets animating slowly
+                // Tilt nose-down forward to show crash state
+                helicopter.rotation.z = THREE.MathUtils.lerp(helicopter.rotation.z, -0.4, 0.06);
+
                 camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0, 0.05);
                 camera.lookAt(0, 5, 0);
             }
