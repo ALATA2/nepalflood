@@ -1140,25 +1140,25 @@
 
                 // 2. White neck (curved forward)
                 const neckGeom = new THREE.CylinderGeometry(0.1, 0.14, 0.4, 8);
-                neckGeom.rotateZ(-0.4); // tilt forward
+                neckGeom.rotateZ(0.4); // tilt left/forward
                 const neck = new THREE.Mesh(neckGeom, feathersWhite);
-                neck.position.set(0.48, 0.22, 0);
+                neck.position.set(-0.48, 0.22, 0);
                 neck.castShadow = true;
                 group.add(neck);
 
                 // 3. Head & Long Beak
                 const headGeom = new THREE.SphereGeometry(0.13, 8, 8);
                 const head = new THREE.Mesh(headGeom, headYellow);
-                head.position.set(0.64, 0.38, 0);
+                head.position.set(-0.64, 0.38, 0);
                 head.castShadow = true;
                 group.add(head);
 
                 // Long Beak pointed forward-down
                 const beakGeom = new THREE.ConeGeometry(0.07, 0.75, 5);
-                beakGeom.rotateZ(-1.2); // point forward-down
-                beakGeom.translate(0.3, -0.15, 0);
+                beakGeom.rotateZ(1.2); // point forward-down (left-down)
+                beakGeom.translate(-0.3, -0.15, 0);
                 const beak = new THREE.Mesh(beakGeom, beakOrange);
-                beak.position.set(0.64, 0.38, 0);
+                beak.position.set(-0.64, 0.38, 0);
                 beak.castShadow = true;
                 group.add(beak);
 
@@ -1201,8 +1201,8 @@
                 // Tiny tail feathers
                 const tailGeom = new THREE.BoxGeometry(0.25, 0.04, 0.35);
                 const tail = new THREE.Mesh(tailGeom, feathersDark);
-                tail.position.set(-0.62, 0.1, 0);
-                tail.rotation.z = 0.2;
+                tail.position.set(0.62, 0.1, 0);
+                tail.rotation.z = -0.2;
                 group.add(tail);
 
                 group.userData = { 
@@ -1244,12 +1244,11 @@
             });
             obstacles.length = 0;
 
-            for (let i = 0; i < 3; i++) {
-                const obs = { mesh: null, type: '', flightSpeed: 0 };
-                spawnObstacle(obs);
-                obs.mesh.position.x = 10 + i * 8 + (Math.random() - 0.5) * 3;
-                obstacles.push(obs);
-            }
+            // Start with only 1 obstacle, spawned far off-screen
+            const obs = { mesh: null, type: '', flightSpeed: 0 };
+            spawnObstacle(obs);
+            obs.mesh.position.x = 22.0; 
+            obstacles.push(obs);
         }
 
         // 8. Dynamic Wave Spray Particles
@@ -1945,6 +1944,22 @@
 
                 // UPDATE FLYING OBSTACLES (relative to scroll speed - delayed during warm-up)
                 if (gameElapsedTime >= 25.0) {
+                    // Progressive obstacle scaling
+                    if (obstacles.length === 1 && distanceTraveled >= 250.0) {
+                        const obs = { mesh: null, type: '', flightSpeed: 0 };
+                        spawnObstacle(obs);
+                        obs.mesh.position.x = 24.0; // off-screen
+                        obstacles.push(obs);
+                        createWorldToast('NEW HAZARD SPOTTED', '#ff8800', 0, 8);
+                    }
+                    if (obstacles.length === 2 && distanceTraveled >= 700.0) {
+                        const obs = { mesh: null, type: '', flightSpeed: 0 };
+                        spawnObstacle(obs);
+                        obs.mesh.position.x = 26.0; // off-screen
+                        obstacles.push(obs);
+                        createWorldToast('AIRSPACE CONGESTED', '#ff3333', 0, 8);
+                    }
+
                     obstacles.forEach(obs => {
                         obs.mesh.visible = true;
                         const totalVx = -(currentScrollSpeed + obs.flightSpeed);
