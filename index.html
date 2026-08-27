@@ -1521,15 +1521,31 @@
 
             document.getElementById('nepal-flood-stage-banner').style.display = 'none';
 
-            // Reset terrain blocks colors to Stage 1 and hide ceilings
-            terrainBlocks.forEach(b => {
+            // Reset terrain blocks positions, heights, colors, and hide ceilings
+            for (let i = 0; i < terrainBlocks.length; i++) {
+                const x = -10.0 + i * blockWidth;
+                const b = terrainBlocks[i];
+                b.x = x;
+                const newDirtHeight = 1.2 + Math.sin(i * 0.7) * 0.8 + Math.random() * 0.4;
+                b.dirtHeight = newDirtHeight;
+                b.topHeight = newDirtHeight + 0.3;
+
                 b.dirtMesh.material.color.setHex(0x5c4033);
                 b.grassMesh.material.color.setHex(0x477a34);
+                
+                b.dirtMesh.scale.y = newDirtHeight;
+                b.dirtMesh.position.set(x, newDirtHeight / 2, 0);
+                b.grassMesh.position.set(x, newDirtHeight + 0.15, 0);
+                
                 if (b.ceilingMesh) {
                     b.ceilingMesh.visible = false;
                     b.ceilingMesh.material.color.setHex(0x2d3136);
+                    b.ceilingMesh.position.set(x, 10.0, 0);
+                    b.ceilingHeight = 0.0;
+                    b.bottomCeilingY = 10.0;
                 }
-            });
+            }
+            terrainCounter = terrainBlocks.length - 1;
 
             // Reset sky/fog and light colors
             scene.fog.color.copy(baseSkyColor);
@@ -1670,14 +1686,19 @@
 
                 // Slowly scroll background terrain
                 terrainBlocks.forEach(block => {
-                    block.x -= 1.0 * dt; 
-                    if (block.x < -18.0) {
-                        const rightmostX = terrainBlocks[terrainBlocks.length - 1].x;
-                        block.x = rightmostX + blockWidth;
-                    }
+                    block.x -= 1.0 * dt;
                     block.dirtMesh.position.x = block.x;
                     block.grassMesh.position.x = block.x;
                 });
+
+                if (terrainBlocks[0].x < -18.0) {
+                    const block = terrainBlocks.shift();
+                    const rightmostX = terrainBlocks[terrainBlocks.length - 1].x;
+                    block.x = rightmostX + blockWidth;
+                    block.dirtMesh.position.x = block.x;
+                    block.grassMesh.position.x = block.x;
+                    terrainBlocks.push(block);
+                }
 
                 // Slowly scroll background mountains (parallax)
                 backgroundMountains.forEach(m => {
