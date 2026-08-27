@@ -1690,6 +1690,15 @@
             } else if (gameState === 'PLAYING') {
                 gameElapsedTime += dt;
 
+                // Define separated hitboxes for fair arcade game feel
+                const hazardCenter = new THREE.Vector3(helicopter.position.x + 0.15, helicopter.position.y + 0.05, 0);
+                const hazardSize = new THREE.Vector3(1.7, 0.70, 1.0); // Tight cabin only, excludes long tail boom
+                const heliHazardBox = new THREE.Box3().setFromCenterAndSize(hazardCenter, hazardSize);
+
+                const rescueCenter = new THREE.Vector3(helicopter.position.x + 0.15, helicopter.position.y - 0.25, 0);
+                const rescueSize = new THREE.Vector3(2.2, 1.45, 1.4); // Extends lower to include landing gear struts and wheels
+                const heliRescueBox = new THREE.Box3().setFromCenterAndSize(rescueCenter, rescueSize);
+
                 // STAGE PROGRESSION & ANNOUNCEMENTS
                 if (distanceTraveled < 600) {
                     currentStage = 1;
@@ -1989,7 +1998,7 @@
                     if (!isInvincible) {
                         rock.mesh.updateMatrixWorld(true);
                         const rockBox = new THREE.Box3().setFromObject(rock.mesh);
-                        if (heliBox.intersectsBox(rockBox)) {
+                        if (heliHazardBox.intersectsBox(rockBox)) {
                             timer -= 3.0;
                             if (timer < 0) timer = 0;
                             document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
@@ -2023,7 +2032,6 @@
 
                 // COLLISION DETECTION (World space bounding boxes)
                 helicopter.updateMatrixWorld(true);
-                const heliBox = new THREE.Box3().setFromObject(helicopterBody);
 
                 // A. Omini rescue check
                 for (let i = ominiArray.length - 1; i >= 0; i--) {
@@ -2031,7 +2039,7 @@
                     o.mesh.updateMatrixWorld(true);
                     const oBox = new THREE.Box3().setFromObject(o.mesh);
 
-                    if (heliBox.intersectsBox(oBox)) {
+                    if (heliRescueBox.intersectsBox(oBox)) {
                         // Double reward score & time during active surges
                         const pointVal = isSurging ? 2 : 1;
                         const timeVal = isSurging ? 4.0 : 3.0;
@@ -2065,7 +2073,7 @@
                         obs.mesh.updateMatrixWorld(true);
                         const obsBox = new THREE.Box3().setFromObject(obs.mesh);
 
-                        if (heliBox.intersectsBox(obsBox)) {
+                        if (heliHazardBox.intersectsBox(obsBox)) {
                             // Hit obstacle
                             timer -= 3.0;
                             if (timer < 0) timer = 0;
@@ -2097,7 +2105,7 @@
                         if (Math.abs(block.x - helicopter.position.x) < 2.5) {
                             block.grassMesh.updateMatrixWorld(true);
                             const blockBox = new THREE.Box3().setFromObject(block.grassMesh);
-                            if (heliBox.intersectsBox(blockBox)) {
+                            if (heliHazardBox.intersectsBox(blockBox)) {
                                 hitTerrain = true;
                                 break;
                             }
@@ -2133,7 +2141,7 @@
                         if (block.ceilingMesh.visible && Math.abs(block.x - helicopter.position.x) < 2.5) {
                             block.ceilingMesh.updateMatrixWorld(true);
                             const ceilBox = new THREE.Box3().setFromObject(block.ceilingMesh);
-                            if (heliBox.intersectsBox(ceilBox)) {
+                            if (heliHazardBox.intersectsBox(ceilBox)) {
                                 hitCeiling = true;
                                 break;
                             }
@@ -2166,7 +2174,7 @@
                     leftWaveGroup.updateMatrixWorld(true);
                     const waveBox = new THREE.Box3().setFromObject(waveBodyMesh);
 
-                    if (heliBox.intersectsBox(waveBox)) {
+                    if (heliHazardBox.intersectsBox(waveBox)) {
                         // Engulfed by left wave
                         timer -= 3.0;
                         if (timer < 0) timer = 0;
