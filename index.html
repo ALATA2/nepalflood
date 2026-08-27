@@ -1653,6 +1653,15 @@
             document.getElementById('nepal-flood-ui-container').style.display = 'flex';
             
             gameState = 'PLAYING';
+
+            // Show initial warning banners
+            showStageBanner("MUDDY TORRENT INCOMING!!!", "FLY UPWARD & EVADE DANGER!");
+            
+            setTimeout(() => {
+                if (gameState === 'PLAYING') {
+                    showStageBanner("RESCUE MISSION ACTIVE", "SAVE AS MANY CITIZENS AS POSSIBLE!");
+                }
+            }, 3200);
         }
 
         function triggerGameOver() {
