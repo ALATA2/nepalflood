@@ -301,6 +301,11 @@
                 <li><strong>FLOOD SURGE</strong>: Every 15 seconds the water rises! Rescues during surges award <strong>DOUBLE POINTS (+2 score, +4s time)</strong>, but watch out for the left surge wave!</li>
             </ul>
         </div>
+        <!-- Leaderboard Table Container -->
+        <div id="nepal-flood-leaderboard-container" style="margin-bottom: 25px; background: rgba(0,0,0,0.7); padding: 12px 18px; border: 3px solid #ffcc00; border-radius: 6px; width: 340px; font-size: 8px; font-family: 'Press Start 2P', monospace; color: #fff; line-height: 1.8; box-sizing: border-box;">
+            <div style="text-align: center; color: #ffcc00; font-weight: bold; margin-bottom: 10px; font-size: 9px; letter-spacing: 1px;">TOP 5 RESCUERS</div>
+            <div id="nepal-flood-leaderboard-entries"></div>
+        </div>
         <button id="nepal-flood-btn-start" class="nepal-flood-btn">START MI-17 ENGINES</button>
     </div>
 
@@ -315,6 +320,12 @@
             <br>
             PERSONAL BEST: <span id="nepal-flood-high-score" style="color: #00cc66; font-weight: bold;">0</span>
         </div>
+        <!-- New Leaderboard Entry Panel -->
+        <div id="nepal-flood-leaderboard-entry-panel" style="display: none; flex-direction: column; align-items: center; background: rgba(0,0,0,0.85); border: 3px solid #ffcc00; border-radius: 8px; padding: 20px; margin-bottom: 25px; font-family: 'Press Start 2P', monospace; box-sizing: border-box;">
+            <div style="color: #ffcc00; font-size: 9px; margin-bottom: 12px; text-align: center; line-height: 1.4;">NEW RECORD!<br>ENTER 7-LETTER SIGNATURE:</div>
+            <input id="nepal-flood-name-input" type="text" maxlength="7" style="background: #222; border: 2px solid #ffcc00; color: #fff; padding: 10px; text-align: center; font-family: 'Press Start 2P', monospace; font-size: 14px; text-transform: uppercase; outline: none; width: 180px; letter-spacing: 2px;" placeholder="HERO">
+            <button id="nepal-flood-btn-submit-score" class="nepal-flood-btn" style="margin-top: 15px; padding: 10px 20px; font-size: 11px; background: #ffaa00; border-bottom: 4px solid #cc8800;">SUBMIT RECORD</button>
+        </div>
         <button id="nepal-flood-btn-restart" class="nepal-flood-btn">RELAUNCH MISSION</button>
     </div>
 
@@ -322,9 +333,68 @@
         // --- GAME CONSTANTS & STATE ---
         let gameState = 'START'; // 'START', 'PLAYING', 'GAMEOVER'
         let score = 0;
-        let timer = 30.0;
+        let timer = 59.0;
         let distanceTraveled = 0;
         let highScore = localStorage.getItem('nepal-flood-highscore') ? parseInt(localStorage.getItem('nepal-flood-highscore')) : 0;
+
+        // Leaderboard (Top 5 hero signature records)
+        let leaderboard = localStorage.getItem('nepal-flood-leaderboard') 
+            ? JSON.parse(localStorage.getItem('nepal-flood-leaderboard')) 
+            : [
+                { name: "ANTIGRA", score: 10, distance: 280 },
+                { name: "NEPAL17", score: 8, distance: 230 },
+                { name: "HERO-01", score: 6, distance: 180 },
+                { name: "RESCUER", score: 4, distance: 120 },
+                { name: "PILOT77", score: 2, distance: 60 }
+            ];
+
+        function renderLeaderboard() {
+            const container = document.getElementById('nepal-flood-leaderboard-entries');
+            if (!container) return;
+            container.innerHTML = '';
+            leaderboard.forEach((entry, idx) => {
+                const div = document.createElement('div');
+                div.style.display = 'flex';
+                div.style.justifyContent = 'space-between';
+                div.style.margin = '4px 0';
+                div.innerHTML = `
+                    <span>${idx + 1}. ${entry.name}</span>
+                    <span>${entry.score} RESCUES (${entry.distance}m)</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Coins Collectibles (Stage 2.5: Gold Tunnel)
+        const coinsArray = [];
+        const coinGeom = new THREE.CylinderGeometry(0.18, 0.18, 0.05, 8);
+        coinGeom.rotateX(Math.PI / 2); // face camera
+        const coinMat = new THREE.MeshStandardMaterial({
+            color: 0xffd700, // Shiny gold
+            roughness: 0.18,
+            metalness: 0.85
+        });
+
+        function createCoinMesh() {
+            const mesh = new THREE.Mesh(coinGeom, coinMat);
+            mesh.castShadow = true;
+            scene.add(mesh);
+            return mesh;
+        }
+
+        function spawnCoinOnBlock(block) {
+            const mesh = createCoinMesh();
+            const floorY = block.topHeight + 0.5;
+            const ceilingY = block.bottomCeilingY - 0.5;
+            const spawnY = floorY + Math.random() * (ceilingY - floorY);
+            
+            mesh.position.set(block.x, spawnY, 0);
+            coinsArray.push({
+                mesh: mesh,
+                x: block.x,
+                y: spawnY
+            });
+        }
         
         let isDescending = false;
         let isInvincible = false;
@@ -404,21 +474,52 @@
                 if (!this.ctx) return;
 
                 const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
+                const notes = [523.25, 659.25, 783.99]; // C5 -> E5 -> G5
+                
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+                    
+                    gain.gain.setValueAtTime(0, now);
+                    gain.gain.linearRampToValueAtTime(0.12, now + idx * 0.07 + 0.01);
+                    gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.07 + 0.14);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.start(now + idx * 0.07);
+                    osc.stop(now + idx * 0.07 + 0.15);
+                });
+            },
 
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(380, now);
-                osc.frequency.exponentialRampToValueAtTime(800, now + 0.16);
+            playCoin() {
+                this.init();
+                this.resume();
+                if (!this.ctx) return;
 
-                gain.gain.setValueAtTime(0.14, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.16);
-
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-
-                osc.start(now);
-                osc.stop(now + 0.16);
+                const now = this.ctx.currentTime;
+                const notes = [987.77, 1318.51]; // B5 -> E6
+                
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    
+                    gain.gain.setValueAtTime(0, now);
+                    gain.gain.linearRampToValueAtTime(0.1, now + idx * 0.08 + 0.01);
+                    gain.gain.linearRampToValueAtTime(0.005, now + idx * 0.08 + 0.22);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.23);
+                });
             },
 
             playDamage() {
@@ -427,21 +528,46 @@
                 if (!this.ctx) return;
 
                 const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
+                // Filtered white noise explosion
+                const bufferSize = this.ctx.sampleRate * 0.45;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(450, now);
+                filter.frequency.exponentialRampToValueAtTime(80, now + 0.45);
+
                 const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
 
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(130, now);
-                osc.frequency.linearRampToValueAtTime(45, now + 0.35);
-
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
-
-                osc.connect(gain);
+                noise.connect(filter);
+                filter.connect(gain);
                 gain.connect(this.ctx.destination);
 
-                osc.start(now);
-                osc.stop(now + 0.35);
+                noise.start(now);
+                noise.stop(now + 0.45);
+
+                // Thump/Kick punch impact
+                const kick = this.ctx.createOscillator();
+                const kickGain = this.ctx.createGain();
+                kick.type = 'sine';
+                kick.frequency.setValueAtTime(100, now);
+                kick.frequency.exponentialRampToValueAtTime(30, now + 0.15);
+                kickGain.gain.setValueAtTime(0.3, now);
+                kickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                
+                kick.connect(kickGain);
+                kickGain.connect(this.ctx.destination);
+                kick.start(now);
+                kick.stop(now + 0.15);
             },
 
             playSiren() {
@@ -505,6 +631,13 @@
                 this.motorOsc = this.ctx.createOscillator();
                 this.motorGain = this.ctx.createGain();
 
+                // LFO for blade chopping modulation (approx. 8Hz rotor speed)
+                this.motorLfo = this.ctx.createOscillator();
+                this.motorLfo.frequency.setValueAtTime(8, now);
+                
+                const lfoGain = this.ctx.createGain();
+                lfoGain.gain.setValueAtTime(0.035, now); // modulation depth
+
                 this.motorOsc.type = 'sawtooth';
                 this.motorOsc.frequency.setValueAtTime(42, now); 
 
@@ -512,13 +645,18 @@
                 filter.type = 'lowpass';
                 filter.frequency.setValueAtTime(140, now);
 
-                this.motorGain.gain.setValueAtTime(0.06, now); 
+                this.motorGain.gain.setValueAtTime(0.05, now); 
+
+                // Connect LFO modulation to motor gain
+                this.motorLfo.connect(lfoGain);
+                lfoGain.connect(this.motorGain.gain);
 
                 this.motorOsc.connect(filter);
                 filter.connect(this.motorGain);
                 this.motorGain.connect(this.ctx.destination);
 
                 this.motorOsc.start(now);
+                this.motorLfo.start(now);
             },
 
             updateMotor(yVel) {
@@ -532,8 +670,13 @@
                     try {
                         this.motorOsc.stop();
                         this.motorOsc.disconnect();
+                        if (this.motorLfo) {
+                            this.motorLfo.stop();
+                            this.motorLfo.disconnect();
+                        }
                     } catch (e) {}
                     this.motorOsc = null;
+                    this.motorLfo = null;
                 }
             }
         };
@@ -1568,6 +1711,9 @@
             fuelCansArray.forEach(c => scene.remove(c.mesh));
             fuelCansArray.length = 0;
 
+            coinsArray.forEach(c => scene.remove(c.mesh));
+            coinsArray.length = 0;
+
             document.getElementById('nepal-flood-stage-banner').style.display = 'none';
 
             // Reset terrain blocks positions, heights, colors, and hide ceilings
@@ -1683,6 +1829,18 @@
 
             document.getElementById('nepal-flood-ui-container').style.display = 'none';
             document.getElementById('nepal-flood-gameover').style.display = 'flex';
+
+            // Check if player score qualifies for Leaderboard Top 5
+            const qualifies = score > leaderboard[leaderboard.length - 1].score || leaderboard.length < 5;
+            if (qualifies) {
+                document.getElementById('nepal-flood-leaderboard-entry-panel').style.display = 'flex';
+                document.getElementById('nepal-flood-btn-restart').style.display = 'none';
+                document.getElementById('nepal-flood-name-input').value = '';
+                document.getElementById('nepal-flood-name-input').focus();
+            } else {
+                document.getElementById('nepal-flood-leaderboard-entry-panel').style.display = 'none';
+                document.getElementById('nepal-flood-btn-restart').style.display = 'block';
+            }
         }
 
         // Hook up menu click handlers
@@ -1698,6 +1856,42 @@
             startPlaying();
             Sound.startMotor();
         });
+
+        // 7-letter signature validation input listener
+        const nameInput = document.getElementById('nepal-flood-name-input');
+        nameInput.addEventListener('input', () => {
+            nameInput.value = nameInput.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+        });
+
+        // Leaderboard score submission callback
+        document.getElementById('nepal-flood-btn-submit-score').addEventListener('click', () => {
+            let name = nameInput.value.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+            if (name.length === 0) name = "HERO";
+            name = name.padEnd(7, '-').substring(0, 7); // Pad to exactly 7 letters
+
+            leaderboard.push({
+                name: name,
+                score: score,
+                distance: Math.floor(distanceTraveled)
+            });
+
+            // Sort top rescuers (by score desc, then distance desc)
+            leaderboard.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return b.distance - a.distance;
+            });
+
+            leaderboard = leaderboard.slice(0, 5);
+            localStorage.setItem('nepal-flood-leaderboard', JSON.stringify(leaderboard));
+
+            renderLeaderboard();
+
+            document.getElementById('nepal-flood-leaderboard-entry-panel').style.display = 'none';
+            document.getElementById('nepal-flood-btn-restart').style.display = 'block';
+        });
+
+        // Initial rendering of leaderboard
+        renderLeaderboard();
 
         // --- MAIN RENDER & ANIMATION LOOP ---
         const clock = new THREE.Clock();
@@ -1784,6 +1978,8 @@
                     currentStage = 1;
                 } else if (distanceTraveled < 800) {
                     currentStage = 2;
+                } else if (distanceTraveled < 920) {
+                    currentStage = 2.5; // Gold Tunnel Bonus Stage!
                 } else {
                     currentStage = 3;
                 }
@@ -1792,6 +1988,8 @@
                     prevStage = currentStage;
                     if (currentStage === 2) {
                         showStageBanner("STAGE 2: ROCKY CAVES", "WATCH THE ROOF! DANGER OF CEILING COLLISIONS!");
+                    } else if (currentStage === 2.5) {
+                        showStageBanner("BONUS STAGE: GOLD TUNNEL", "COLLECT COINS FOR +2s EACH! NO HAZARDS!");
                     } else if (currentStage === 3) {
                         showStageBanner("STAGE 3: ROCKSLIDE PASS", "WARNING: JAGGED CANYON PEAKS & FALLING ROCKS!");
                         // Hide ceiling meshes when leaving caves
@@ -1811,6 +2009,9 @@
                     } else if (currentStage === 2) {
                         targetSky = new THREE.Color(0x1a2228); // subterranean grey-blue
                         targetLight = new THREE.Color(0x6e7682);
+                    } else if (currentStage === 2.5) {
+                        targetSky = new THREE.Color(0x241d13); // dark gold-brown cave
+                        targetLight = new THREE.Color(0x8c7855); // golden ambient glow
                     } else {
                         targetSky = new THREE.Color(0x594c44); // Sunset dusty orange-brown
                         targetLight = new THREE.Color(0x948275);
@@ -1925,6 +2126,9 @@
                     } else if (currentStage === 2) {
                         block.dirtMesh.material.color.setHex(0x2d3136);
                         block.grassMesh.material.color.setHex(0x3a3f45);
+                    } else if (currentStage === 2.5) {
+                        block.dirtMesh.material.color.setHex(0x4a3c27); // Gold-brown dirt
+                        block.grassMesh.material.color.setHex(0x8f764a); // Gold highlights
                     } else {
                         block.dirtMesh.material.color.setHex(0x6e503a);
                         block.grassMesh.material.color.setHex(0x8c684d);
@@ -1934,14 +2138,18 @@
                     block.dirtMesh.position.set(newX, newDirtHeight / 2, 0);
                     block.grassMesh.position.set(newX, newDirtHeight + 0.15, 0);
 
-                    // Dynamic Ceiling generation (Stage 2: Caves)
-                    if (currentStage === 2) {
+                    // Dynamic Ceiling generation (Stage 2 & 2.5: Caves & Tunnels)
+                    if (currentStage === 2 || currentStage === 2.5) {
                         const ceilHeight = 0.8 + Math.sin(terrainCounter * 0.7) * 0.6 + Math.random() * 0.3;
                         block.ceilingHeight = ceilHeight;
                         block.bottomCeilingY = 10.0 - ceilHeight;
                         block.ceilingMesh.scale.y = ceilHeight;
                         block.ceilingMesh.position.set(newX, 10.0 - ceilHeight / 2, 0);
-                        block.ceilingMesh.material.color.setHex(0x2d3136);
+                        if (currentStage === 2.5) {
+                            block.ceilingMesh.material.color.setHex(0x4a3c27);
+                        } else {
+                            block.ceilingMesh.material.color.setHex(0x2d3136);
+                        }
                         block.ceilingMesh.visible = true;
                     } else {
                         block.ceilingMesh.visible = false;
@@ -1953,12 +2161,20 @@
 
                     // Chance to spawn omino on the newly recycled block
                     let spawnedItem = false;
-                    if (Math.random() < 0.18 && ominiArray.length < 3) {
-                        spawnOminoOnBlock(block);
-                        spawnedItem = true;
-                    }
-                    if (!spawnedItem && Math.random() < 0.12 && fuelCansArray.length < 2) {
-                        spawnFuelCanOnBlock(block);
+                    if (currentStage !== 2.5) {
+                        if (Math.random() < 0.18 && ominiArray.length < 3) {
+                            spawnOminoOnBlock(block);
+                            spawnedItem = true;
+                        }
+                        if (!spawnedItem && Math.random() < 0.12 && fuelCansArray.length < 2) {
+                            spawnFuelCanOnBlock(block);
+                        }
+                    } else {
+                        // In Stage 2.5 (Gold Tunnel), spawn coins instead!
+                        // Spawn ~22 coins across 120m tunnel (18.5% spawn rate per recycled block)
+                        if (Math.random() < 0.185) {
+                            spawnCoinOnBlock(block);
+                        }
                     }
                 }
 
@@ -2023,6 +2239,40 @@
                     }
                 }
 
+                // UPDATE PROCEDURAL COINS
+                for (let i = coinsArray.length - 1; i >= 0; i--) {
+                    const c = coinsArray[i];
+                    c.x -= currentScrollSpeed * dt;
+                    
+                    // Spinning animation
+                    c.mesh.position.set(c.x, c.y + Math.sin(time * 6.0 + c.x) * 0.05, 0);
+                    c.mesh.rotation.y += 3.5 * dt;
+                    
+                    // Remove if scrolled off-screen left
+                    if (c.x < -16.0) {
+                        scene.remove(c.mesh);
+                        coinsArray.splice(i, 1);
+                        continue;
+                    }
+                    
+                    // Collision check
+                    c.mesh.updateMatrixWorld(true);
+                    const coinBox = new THREE.Box3().setFromObject(c.mesh);
+                    if (heliRescueBox.intersectsBox(coinBox)) {
+                        // Refill timer by +2.0 seconds
+                        timer += 2.0;
+                        createWorldToast('+2s COIN', '#ffd700', c.x, c.y + 0.8);
+                        
+                        Sound.playCoin(); 
+                        if (navigator.vibrate) {
+                            navigator.vibrate(20);
+                        }
+                        
+                        scene.remove(c.mesh);
+                        coinsArray.splice(i, 1);
+                    }
+                }
+
                 // HELICOPTER FLIGHT CONTROL (Vertical)
                 if (isDescending) {
                     verticalVelocity -= gravity * dt;
@@ -2063,8 +2313,8 @@
                     }
                 }
 
-                // UPDATE FLYING OBSTACLES (relative to scroll speed - delayed during warm-up)
-                if (gameElapsedTime >= 25.0) {
+                // UPDATE FLYING OBSTACLES (relative to scroll speed - delayed during warm-up, disabled in Gold Tunnel)
+                if (gameElapsedTime >= 25.0 && currentStage !== 2.5) {
                     // Progressive obstacle scaling
                     if (obstacles.length === 1 && distanceTraveled >= 250.0) {
                         const obs = { mesh: null, type: '', flightSpeed: 0 };
