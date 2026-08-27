@@ -362,6 +362,7 @@
         let tailRotorSpeed = 0.9;
 
         // Progressive Stages variables
+        let gameElapsedTime = 0.0;
         let currentStage = 1;
         let prevStage = 1;
         
@@ -1373,6 +1374,7 @@
             helicopter.visible = true;
 
             // Stages & Hazards reset
+            gameElapsedTime = 0.0;
             currentStage = 1;
             prevStage = 1;
             rockSpawnTimer = 0.0;
@@ -1551,6 +1553,8 @@
                 });
 
             } else if (gameState === 'PLAYING') {
+                gameElapsedTime += dt;
+
                 // STAGE PROGRESSION & ANNOUNCEMENTS
                 if (distanceTraveled < 600) {
                     currentStage = 1;
@@ -1627,20 +1631,22 @@
                 document.getElementById('nepal-flood-distance').innerText = `${Math.floor(distanceTraveled)} m`;
 
                 // --- PROCEDURAL FLOOD SURGE TRIGGER ---
-                if (!isSurging) {
-                    surgeCycleTimer += dt;
-                    if (surgeCycleTimer >= 15.0) { // Every 15s, triggers a surge
-                        isSurging = true;
-                        surgeActiveTimer = 5.0; // surge lasts 5s
-                        Sound.playSiren();
-                        document.getElementById('nepal-flood-warning').style.display = 'block';
-                    }
-                } else {
-                    surgeActiveTimer -= dt;
-                    if (surgeActiveTimer <= 0) {
-                        isSurging = false;
-                        surgeCycleTimer = 0.0;
-                        document.getElementById('nepal-flood-warning').style.display = 'none';
+                if (gameElapsedTime >= 25.0) {
+                    if (!isSurging) {
+                        surgeCycleTimer += dt;
+                        if (surgeCycleTimer >= 15.0) { // Every 15s, triggers a surge
+                            isSurging = true;
+                            surgeActiveTimer = 5.0; // surge lasts 5s
+                            Sound.playSiren();
+                            document.getElementById('nepal-flood-warning').style.display = 'block';
+                        }
+                    } else {
+                        surgeActiveTimer -= dt;
+                        if (surgeActiveTimer <= 0) {
+                            isSurging = false;
+                            surgeCycleTimer = 0.0;
+                            document.getElementById('nepal-flood-warning').style.display = 'none';
+                        }
                     }
                 }
 
@@ -1793,29 +1799,37 @@
                     }
                 }
 
-                // UPDATE FLYING OBSTACLES (relative to scroll speed)
-                obstacles.forEach(obs => {
-                    const totalVx = -(currentScrollSpeed + obs.flightSpeed);
-                    obs.mesh.position.x += totalVx * dt;
+                // UPDATE FLYING OBSTACLES (relative to scroll speed - delayed during warm-up)
+                if (gameElapsedTime >= 25.0) {
+                    obstacles.forEach(obs => {
+                        obs.mesh.visible = true;
+                        const totalVx = -(currentScrollSpeed + obs.flightSpeed);
+                        obs.mesh.position.x += totalVx * dt;
 
-                    // Obstacle visuals
-                    if (obs.type === 'drone') {
-                        if (obs.mesh.userData.rotors) {
-                            obs.mesh.userData.rotors.forEach(r => r.rotation.y += 0.6);
+                        // Obstacle visuals
+                        if (obs.type === 'drone') {
+                            if (obs.mesh.userData.rotors) {
+                                obs.mesh.userData.rotors.forEach(r => r.rotation.y += 0.6);
+                            }
+                        } else if (obs.type === 'bird') {
+                            if (obs.mesh.userData.wingL && obs.mesh.userData.wingR) {
+                                const flap = Math.sin(time * 18.0) * 0.55;
+                                obs.mesh.userData.wingL.rotation.x = flap;
+                                obs.mesh.userData.wingR.rotation.x = -flap;
+                            }
                         }
-                    } else if (obs.type === 'bird') {
-                        if (obs.mesh.userData.wingL && obs.mesh.userData.wingR) {
-                            const flap = Math.sin(time * 18.0) * 0.55;
-                            obs.mesh.userData.wingL.rotation.x = flap;
-                            obs.mesh.userData.wingR.rotation.x = -flap;
-                        }
-                    }
 
-                    // Recycle if scrolled past left border
-                    if (obs.mesh.position.x < -16.0) {
-                        spawnObstacle(obs);
-                    }
-                });
+                        // Recycle if scrolled past left border
+                        if (obs.mesh.position.x < -16.0) {
+                            spawnObstacle(obs);
+                        }
+                    });
+                } else {
+                    obstacles.forEach(obs => {
+                        obs.mesh.visible = false;
+                        obs.mesh.position.x = 25.0; // parked off-screen
+                    });
+                }
 
                 // UPDATE FALLING ROCKS (Stage 3)
                 if (currentStage === 3) {
@@ -1909,8 +1923,8 @@
                     }
                 }
 
-                // B. Obstacle hazard collision check
-                if (!isInvincible) {
+                // B. Obstacle hazard collision check (only active after warm-up)
+                if (!isInvincible && gameElapsedTime >= 25.0) {
                     for (let i = 0; i < obstacles.length; i++) {
                         const obs = obstacles[i];
                         obs.mesh.updateMatrixWorld(true);
