@@ -839,6 +839,8 @@
         helicopter.add(finMesh);
 
         // Tricycle Landing Gear
+        const strutMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3 });
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 });
         const noseStrutGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 6);
         const noseStrut = new THREE.Mesh(noseStrutGeom, strutMat);
         noseStrut.position.set(0.9, -0.6, 0);
