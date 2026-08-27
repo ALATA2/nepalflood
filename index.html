@@ -742,6 +742,8 @@
 
         // 5. Player: Mil Mi-17 military helicopter camo model
         const helicopter = new THREE.Group();
+        const helicopterBody = new THREE.Group();
+        helicopter.add(helicopterBody);
 
         // Camouflage military materials
         const camoGreen = new THREE.MeshStandardMaterial({ color: 0x5a6358, roughness: 0.65 }); // Base olive camo
@@ -756,20 +758,20 @@
         const cabinMesh = new THREE.Mesh(cabinGeom, camoGreen);
         cabinMesh.castShadow = true;
         cabinMesh.receiveShadow = true;
-        helicopter.add(cabinMesh);
+        helicopterBody.add(cabinMesh);
 
         // Camo spot sleeves
         const camoSleeve1 = new THREE.Mesh(new THREE.CylinderGeometry(0.505, 0.485, 0.6, 12), camoDark);
         camoSleeve1.geometry.rotateZ(Math.PI / 2);
         camoSleeve1.position.set(0.3, 0, 0);
         camoSleeve1.castShadow = true;
-        helicopter.add(camoSleeve1);
+        helicopterBody.add(camoSleeve1);
 
         const camoSleeve2 = new THREE.Mesh(new THREE.CylinderGeometry(0.485, 0.455, 0.5, 12), camoLight);
         camoSleeve2.geometry.rotateZ(Math.PI / 2);
         camoSleeve2.position.set(-0.5, 0, 0);
         camoSleeve2.castShadow = true;
-        helicopter.add(camoSleeve2);
+        helicopterBody.add(camoSleeve2);
 
         // Rounded sloped nose
         const noseGeom = new THREE.SphereGeometry(0.48, 12, 12);
@@ -777,7 +779,7 @@
         noseMesh.scale.set(1.4, 0.9, 1.0);
         noseMesh.position.set(1.0, -0.05, 0);
         noseMesh.castShadow = true;
-        helicopter.add(noseMesh);
+        helicopterBody.add(noseMesh);
 
         // Glass windshield overlay
         const windowGeom = new THREE.BoxGeometry(0.35, 0.4, 0.75);
@@ -785,7 +787,7 @@
         windowMesh.position.set(1.2, 0.15, 0);
         windowMesh.rotation.z = -0.3; 
         windowMesh.castShadow = true;
-        helicopter.add(windowMesh);
+        helicopterBody.add(windowMesh);
 
         // Engine housing on top
         const engineGeom = new THREE.CylinderGeometry(0.25, 0.22, 1.3, 10);
@@ -793,13 +795,13 @@
         const engineMesh = new THREE.Mesh(engineGeom, camoGreen);
         engineMesh.position.set(0.1, 0.55, 0);
         engineMesh.castShadow = true;
-        helicopter.add(engineMesh);
+        helicopterBody.add(engineMesh);
 
         const engineCamo = new THREE.Mesh(new THREE.CylinderGeometry(0.255, 0.245, 0.5, 10), camoDark);
         engineCamo.geometry.rotateZ(Math.PI / 2);
         engineCamo.position.set(0.3, 0.55, 0);
         engineCamo.castShadow = true;
-        helicopter.add(engineCamo);
+        helicopterBody.add(engineCamo);
 
         // Twin Front Air Intakes
         const intakeGeom = new THREE.CylinderGeometry(0.13, 0.13, 0.25, 8);
@@ -807,12 +809,12 @@
         const intakeL = new THREE.Mesh(intakeGeom, metalDark);
         intakeL.position.set(0.75, 0.58, 0.13);
         intakeL.castShadow = true;
-        helicopter.add(intakeL);
+        helicopterBody.add(intakeL);
 
         const intakeR = new THREE.Mesh(intakeGeom, metalDark);
         intakeR.position.set(0.75, 0.58, -0.13);
         intakeR.castShadow = true;
-        helicopter.add(intakeR);
+        helicopterBody.add(intakeR);
 
         // Twin Rear Engine Exhaust ports
         const exhaustGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.2, 8);
@@ -822,13 +824,13 @@
         exhaustL.position.set(-0.5, 0.52, 0.22);
         exhaustL.rotation.y = 0.3;
         exhaustL.castShadow = true;
-        helicopter.add(exhaustL);
+        helicopterBody.add(exhaustL);
 
         const exhaustR = new THREE.Mesh(exhaustGeom, metalDark);
         exhaustR.position.set(-0.5, 0.52, -0.22);
         exhaustR.rotation.y = -0.3;
         exhaustR.castShadow = true;
-        helicopter.add(exhaustR);
+        helicopterBody.add(exhaustR);
 
         // Side External Fuel Tanks
         const tankGeom = new THREE.CylinderGeometry(0.13, 0.13, 1.2, 8);
@@ -837,12 +839,12 @@
         const tankL = new THREE.Mesh(tankGeom, camoGreen);
         tankL.position.set(0.1, -0.32, 0.52);
         tankL.castShadow = true;
-        helicopter.add(tankL);
+        helicopterBody.add(tankL);
 
         const tankR = new THREE.Mesh(tankGeom, camoGreen);
         tankR.position.set(0.1, -0.32, -0.52);
         tankR.castShadow = true;
-        helicopter.add(tankR);
+        helicopterBody.add(tankR);
 
         // Tail Boom
         const boomGeom = new THREE.CylinderGeometry(0.32, 0.08, 2.2, 10);
@@ -850,13 +852,13 @@
         const boomMesh = new THREE.Mesh(boomGeom, camoGreen);
         boomMesh.position.set(-1.9, 0.18, 0);
         boomMesh.castShadow = true;
-        helicopter.add(boomMesh);
+        helicopterBody.add(boomMesh);
 
         const boomCamo = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.17, 0.7, 10), camoLight);
         boomCamo.geometry.rotateZ(Math.PI / 2);
         boomCamo.position.set(-1.6, 0.2, 0);
         boomCamo.castShadow = true;
-        helicopter.add(boomCamo);
+        helicopterBody.add(boomCamo);
 
         // Vertical tail fin
         const finGeom = new THREE.BoxGeometry(0.25, 0.85, 0.08);
@@ -864,7 +866,7 @@
         finMesh.position.set(-3.0, 0.72, 0);
         finMesh.rotation.z = 0.35;
         finMesh.castShadow = true;
-        helicopter.add(finMesh);
+        helicopterBody.add(finMesh);
 
         // Tricycle Landing Gear
         const strutMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3 });
@@ -873,19 +875,19 @@
         const noseStrut = new THREE.Mesh(noseStrutGeom, strutMat);
         noseStrut.position.set(0.9, -0.6, 0);
         noseStrut.castShadow = true;
-        helicopter.add(noseStrut);
+        helicopterBody.add(noseStrut);
 
         const noseWheelGeom = new THREE.CylinderGeometry(0.14, 0.14, 0.05, 8);
         noseWheelGeom.rotateX(Math.PI / 2);
         const noseWheelL = new THREE.Mesh(noseWheelGeom, wheelMat);
         noseWheelL.position.set(0.9, -0.85, 0.04);
         noseWheelL.castShadow = true;
-        helicopter.add(noseWheelL);
+        helicopterBody.add(noseWheelL);
 
         const noseWheelR = new THREE.Mesh(noseWheelGeom, wheelMat);
         noseWheelR.position.set(0.9, -0.85, -0.04);
         noseWheelR.castShadow = true;
-        helicopter.add(noseWheelR);
+        helicopterBody.add(noseWheelR);
 
         // Rear main wheels & struts
         const rearStrutGeom = new THREE.CylinderGeometry(0.025, 0.025, 0.55, 6);
@@ -895,13 +897,13 @@
         rearStrutL.position.set(-0.3, -0.6, 0.5);
         rearStrutL.rotation.x = 0.3; 
         rearStrutL.castShadow = true;
-        helicopter.add(rearStrutL);
+        helicopterBody.add(rearStrutL);
 
         const rearStrutR = new THREE.Mesh(rearStrutGeom, strutMat);
         rearStrutR.position.set(-0.3, -0.6, -0.5);
         rearStrutR.rotation.x = -0.3;
         rearStrutR.castShadow = true;
-        helicopter.add(rearStrutR);
+        helicopterBody.add(rearStrutR);
 
         const mainWheelGeom = new THREE.CylinderGeometry(0.22, 0.22, 0.09, 8);
         mainWheelGeom.rotateX(Math.PI / 2);
@@ -909,19 +911,19 @@
         const mainWheelL = new THREE.Mesh(mainWheelGeom, wheelMat);
         mainWheelL.position.set(-0.3, -0.85, 0.62);
         mainWheelL.castShadow = true;
-        helicopter.add(mainWheelL);
+        helicopterBody.add(mainWheelL);
 
         const mainWheelR = new THREE.Mesh(mainWheelGeom, wheelMat);
         mainWheelR.position.set(-0.3, -0.85, -0.62);
         mainWheelR.castShadow = true;
-        helicopter.add(mainWheelR);
+        helicopterBody.add(mainWheelR);
 
         // Main Rotor Shaft
         const shaftGeom = new THREE.CylinderGeometry(0.045, 0.045, 0.25, 8);
         const shaftMesh = new THREE.Mesh(shaftGeom, metalDark);
         shaftMesh.position.set(0.2, 0.72, 0);
         shaftMesh.castShadow = true;
-        helicopter.add(shaftMesh);
+        helicopterBody.add(shaftMesh);
 
         // 5-Blade Main Rotor
         const mainRotor = new THREE.Group();
@@ -1872,7 +1874,7 @@
 
                 // COLLISION DETECTION (World space bounding boxes)
                 helicopter.updateMatrixWorld(true);
-                const heliBox = new THREE.Box3().setFromObject(cabinMesh);
+                const heliBox = new THREE.Box3().setFromObject(helicopterBody);
 
                 // A. Omini rescue check
                 for (let i = ominiArray.length - 1; i >= 0; i--) {
