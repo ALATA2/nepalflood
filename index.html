@@ -176,9 +176,32 @@
             transition: opacity 0.15s ease-out;
         }
 
+        /* Flood Warning Banner */
+        #nepal-flood-warning {
+            position: absolute;
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            background: rgba(230, 0, 0, 0.9);
+            border: 3px solid #ffcc00;
+            padding: 12px 24px;
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: bold;
+            text-shadow: 2px 2px #000;
+            z-index: 12;
+            border-radius: 5px;
+            animation: textPulse 0.4s infinite alternate;
+            pointer-events: none;
+            font-family: 'Press Start 2P', monospace;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+        }
+
         @keyframes textPulse {
-            from { transform: scale(0.97); text-shadow: 3px 3px #000; }
-            to { transform: scale(1.03); text-shadow: 5px 5px #ff3333; }
+            from { transform: translateX(-50%) scale(0.96); text-shadow: 2px 2px #000; }
+            to { transform: translateX(-50%) scale(1.04); text-shadow: 3px 3px #ff3333; }
         }
 
         /* Responsive Mobile Layout Adaptations */
@@ -220,6 +243,11 @@
                 padding: 10px 15px;
                 margin-bottom: 20px;
             }
+            #nepal-flood-warning {
+                font-size: 10px;
+                padding: 8px 16px;
+                top: 90px;
+            }
         }
     </style>
     
@@ -230,6 +258,9 @@
 
     <canvas id="nepal-flood-canvas"></canvas>
     <div id="nepal-flood-flash" class="nepal-flood-damage-flash"></div>
+    
+    <!-- Warning message overlay during surges -->
+    <div id="nepal-flood-warning">ALLERTA PIENA!<br>PUNTI RESCUE X2!</div>
 
     <!-- Gameplay HUD Overlay -->
     <div id="nepal-flood-ui-container">
@@ -253,18 +284,18 @@
         <h2 class="nepal-flood-subtitle">MIL MI-17 RESCUE MISSION</h2>
         <div class="nepal-flood-instructions">
             Pilota, prendi il comando del <strong>Mil Mi-17</strong> dell'Esercito Nepalese! 
-            Le valli himalayane sono inondate. Vola all'infinito e salva più civili possibile.
+            Vola all'infinito e salva i civili lungo la valle alluvionata dell'Himalaya.
             <br><br>
             <strong>CONTROLLI:</strong>
             <ul>
-                <li><strong>Tieni premuto</strong> il Mouse o il Touch per far <strong>scendere</strong> l'elicottero.</li>
-                <li><strong>Rilascia</strong> per farlo <strong>salire</strong> di quota.</li>
+                <li><strong>Tieni premuto</strong> il Mouse o lo Schermo per far <strong>scendere</strong> l'elicottero.</li>
+                <li><strong>Rilascia</strong> per farlo <strong>salire</strong>.</li>
             </ul>
-            <strong>REGOLE DELLA MISSIONE:</strong>
+            <strong>DURANTE IL VOLO:</strong>
             <ul>
-                <li>Salva gli <strong>omini arancioni</strong> sui tetti e colline (+1 punto, +3 secondi).</li>
-                <li>Evita <strong>droni grigi</strong> e <strong>uccelli rossi</strong> (-3 secondi!).</li>
-                <li>Fai attenzione a non rimanere troppo tempo immerso nell'acqua!</li>
+                <li>Salva gli <strong>omini arancioni</strong> (+1 punto, +3s tempo).</li>
+                <li>Evita <strong>droni grigi</strong> e <strong>uccelli rossi</strong> (-3s tempo!).</li>
+                <li><strong>ALLERTA PIENA</strong>: Ogni 15 secondi l'acqua sale! I salvataggi in alluvione valgono <strong>PUNTEGGIO DOPPIO (+2 punti, +4s tempo)</strong>, ma attento all'onda anomala dietro di te!</li>
             </ul>
         </div>
         <button id="nepal-flood-btn-start" class="nepal-flood-btn">AVVIA MOTORI MI-17</button>
@@ -273,13 +304,13 @@
     <!-- Game Over Screen -->
     <div id="nepal-flood-gameover" class="nepal-flood-overlay" style="display: none;">
         <h1 class="nepal-flood-title" style="color: #ff3333;">MISSIONE FALLITA</h1>
-        <h2 class="nepal-flood-subtitle">ELICOTTERO PERDUTO O RIENTRATO</h2>
+        <h2 class="nepal-flood-subtitle">ELICOTTERO PERDUTO</h2>
         <div class="nepal-flood-stats">
             PUNTEGGIO SALVATAGGI: <span id="nepal-flood-final-score" style="color: #ffcc00; font-weight: bold;">0</span>
             <br>
             DISTANZA VOLATA: <span id="nepal-flood-final-distance" style="color: #33ccff; font-weight: bold;">0</span> m
             <br>
-            RECORD SALVATAGGI: <span id="nepal-flood-high-score" style="color: #00cc66; font-weight: bold;">0</span>
+            RECORD PERSONALE: <span id="nepal-flood-high-score" style="color: #00cc66; font-weight: bold;">0</span>
         </div>
         <button id="nepal-flood-btn-restart" class="nepal-flood-btn">NUOVO DECOLLO</button>
     </div>
@@ -296,12 +327,12 @@
         let isInvincible = false;
         let invincibilityTimer = 0;
 
-        // Player physics (Fixed X side-scrolling runner)
-        const helicopterX = -5.0; // Base forward position
+        // Player flight boundaries (Fixed X runner)
+        const helicopterX = -5.0; 
         let helicopterY = 7.5;
         let verticalVelocity = 0;
-        const gravity = 24.0; // Acceleration downwards when clicked
-        const lift = 22.0;    // Acceleration upwards when released
+        const gravity = 24.0; 
+        const lift = 22.0;    
         const maxVerticalSpeed = 9.0;
         const minY = 1.7;
         const maxY = 8.2;
@@ -311,7 +342,19 @@
         let currentScrollSpeed = 0.0;
         let terrainCounter = 0;
 
-        // Spin speed factors (decay on game over)
+        // Dynamic Flood Surge (Onda di piena) variables
+        let isSurging = false;
+        let surgeCycleTimer = 0.0; // counts up to 15s to trigger a surge
+        let surgeActiveTimer = 0.0; // counts down 5s of active surge
+        
+        let targetWaterYOffset = 0.0; 
+        let currentWaterYOffset = 0.0;
+        let targetWaveX = -13.0;
+        let currentWaveX = -13.0;
+        let targetWaveScaleY = 0.5;
+        let currentWaveScaleY = 0.5;
+
+        // Rotors rotation speed variables
         let mainRotorSpeed = 0.8;
         let tailRotorSpeed = 0.9;
 
@@ -345,18 +388,18 @@
                 const gain = this.ctx.createGain();
 
                 osc.type = 'triangle';
-                // Classic retro rising arpeggio sound
-                osc.frequency.setValueAtTime(350, now);
-                osc.frequency.exponentialRampToValueAtTime(750, now + 0.15);
+                // Retro chime
+                osc.frequency.setValueAtTime(380, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.16);
 
                 gain.gain.setValueAtTime(0.14, now);
-                gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.16);
 
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
 
                 osc.start(now);
-                osc.stop(now + 0.15);
+                osc.stop(now + 0.16);
             },
 
             playDamage() {
@@ -369,8 +412,8 @@
                 const gain = this.ctx.createGain();
 
                 osc.type = 'sawtooth';
-                // Deep retro rumble alert
-                osc.frequency.setValueAtTime(140, now);
+                // Deep retro rumble
+                osc.frequency.setValueAtTime(130, now);
                 osc.frequency.linearRampToValueAtTime(45, now + 0.35);
 
                 gain.gain.setValueAtTime(0.2, now);
@@ -383,6 +426,36 @@
                 osc.stop(now + 0.35);
             },
 
+            playSiren() {
+                this.init();
+                this.resume();
+                if (!this.ctx) return;
+
+                const duration = 1.6;
+                const now = this.ctx.currentTime;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sine';
+                // Alternating two-tone siren
+                osc.frequency.setValueAtTime(550, now);
+                for (let i = 0; i < 4; i++) {
+                    osc.frequency.setValueAtTime(550, now + i * 0.4);
+                    osc.frequency.setValueAtTime(750, now + i * 0.4 + 0.2);
+                }
+
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.linearRampToValueAtTime(0.08, now + duration - 0.1);
+                gain.gain.linearRampToValueAtTime(0.01, now + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(now);
+                osc.stop(now + duration);
+            },
+
             playGameOver() {
                 this.init();
                 this.resume();
@@ -393,7 +466,6 @@
                 const gain = this.ctx.createGain();
 
                 osc.type = 'sawtooth';
-                // Melancholic sliding pitch
                 osc.frequency.setValueAtTime(220, now);
                 osc.frequency.linearRampToValueAtTime(70, now + 0.85);
 
@@ -417,14 +489,14 @@
                 this.motorGain = this.ctx.createGain();
 
                 this.motorOsc.type = 'sawtooth';
-                this.motorOsc.frequency.setValueAtTime(42, now); // heavy helicopter motor base frequency
+                this.motorOsc.frequency.setValueAtTime(42, now); // heavy helicopter motor hum
 
                 // lowpass filter creates thick mechanical drone
                 const filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(150, now);
+                filter.frequency.setValueAtTime(140, now);
 
-                this.motorGain.gain.setValueAtTime(0.06, now); // quiet volume
+                this.motorGain.gain.setValueAtTime(0.06, now); 
 
                 this.motorOsc.connect(filter);
                 filter.connect(this.motorGain);
@@ -435,7 +507,7 @@
 
             updateMotor(yVel) {
                 if (!this.ctx || !this.motorOsc) return;
-                // Pitch modulates with movement
+                // Pitch modulates with vertical velocity
                 const pitch = 42 + Math.abs(yVel) * 2.8 + (yVel > 0 ? 10 : 0);
                 this.motorOsc.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.05);
             },
@@ -461,7 +533,11 @@
         renderer.setClearColor(0x3a4454, 1);
 
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x3a4454, 0.02);
+        
+        // Base sky color
+        const baseSkyColor = new THREE.Color(0x3a4454);
+        const stormSkyColor = new THREE.Color(0x222831);
+        scene.fog = new THREE.FogExp2(baseSkyColor.getHex(), 0.02);
 
         // Fixed 2.5D Camera (Looking slightly down from Z=16)
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -484,7 +560,10 @@
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        const baseLightColor = new THREE.Color(0xffffff);
+        const stormLightColor = new THREE.Color(0x8a95a5);
+
+        const dirLight = new THREE.DirectionalLight(baseLightColor.getHex(), 0.8);
         dirLight.position.set(15, 25, 10);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 1024;
@@ -502,7 +581,32 @@
 
         // --- GAME WORLD CREATION ---
 
-        // 1. Endless Terrain setup
+        // 1. Far Background Mountains (Himalayas parallax effect)
+        const mountainGroup = new THREE.Group();
+        scene.add(mountainGroup);
+        const backgroundMountains = [];
+
+        const mountGeom = new THREE.ConeGeometry(7, 13, 4);
+        mountGeom.rotateY(Math.PI / 4); // align vertices frontally
+        const mountMat = new THREE.MeshStandardMaterial({ color: 0x272f3d, roughness: 0.95 });
+
+        // Spawn 3 mountains staggered on Z = -8
+        for(let i = 0; i < 3; i++) {
+            const mesh = new THREE.Mesh(mountGeom, mountMat);
+            const xPos = -12 + i * 14 + (Math.random() - 0.5) * 3;
+            mesh.position.set(xPos, 4.5, -8.0);
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            mountainGroup.add(mesh);
+
+            backgroundMountains.push({
+                mesh: mesh,
+                x: xPos,
+                speedFactor: 0.12 // travels slowly for depth sensation
+            });
+        }
+
+        // 2. Endless Terrain setup
         const terrainGroup = new THREE.Group();
         scene.add(terrainGroup);
 
@@ -512,7 +616,6 @@
         const endX = 18;
         const blockCount = Math.ceil((endX - startX) / blockWidth) + 2;
 
-        // Share geometries to save memory
         const dirtGeometry = new THREE.BoxGeometry(blockWidth * 0.98, 1.0, 4.0);
         const grassGeometry = new THREE.BoxGeometry(blockWidth * 0.98, 0.3, 4.05);
 
@@ -533,7 +636,6 @@
             grassMesh.receiveShadow = true;
             terrainGroup.add(grassMesh);
 
-            // Scale and set positions initially
             dirtMesh.scale.y = dirtHeight;
             dirtMesh.position.set(x, dirtHeight / 2, 0);
             grassMesh.position.set(x, dirtHeight + 0.15, 0);
@@ -548,7 +650,7 @@
             terrainCounter = i;
         }
 
-        // 2. Flood Water
+        // 3. Global Flood Water
         const waterGeom = new THREE.BoxGeometry(40, 4.5, 6);
         const waterMat = new THREE.MeshStandardMaterial({
             color: 0x0055ff,
@@ -563,17 +665,32 @@
         waterMesh.receiveShadow = true;
         scene.add(waterMesh);
 
-        // 3. Player: Mil Mi-17 military helicopter camo model (faces right / +X)
-        const helicopter = new THREE.Group();
-        
-        // Camouflage military materials
-        const camoGreen = new THREE.MeshStandardMaterial({ color: 0x5a6358, roughness: 0.65 }); // Base olive camo
-        const camoDark = new THREE.MeshStandardMaterial({ color: 0x3d443b, roughness: 0.65 });  // Dark camo spot
-        const camoLight = new THREE.MeshStandardMaterial({ color: 0x7a8578, roughness: 0.65 }); // Light camo spot
-        const metalDark = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.6 });  // Metal rotors
-        const glassMat = new THREE.MeshStandardMaterial({ color: 0x112233, roughness: 0.05, metalness: 0.9, transparent: true, opacity: 0.8 }); // cockpit windows
+        // 4. The Left Wave (Flood Surge / Onda di Piena)
+        const leftWaveGroup = new THREE.Group();
+        leftWaveGroup.position.set(currentWaveX, 0, 0);
+        scene.add(leftWaveGroup);
 
-        // Main Cabin Fuselage (horizontal cylinder aligned along X)
+        const waveBodyGeom = new THREE.CylinderGeometry(0.8, 1.3, 8.0, 10);
+        const waveBodyMesh = new THREE.Mesh(waveBodyGeom, waterMat);
+        waveBodyMesh.position.set(0, 4.0, 0);
+        waveBodyMesh.receiveShadow = true;
+        leftWaveGroup.add(waveBodyMesh);
+
+        // Foam crest spheres
+        const foamSpheres = [];
+        const foamMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const foamGeom = new THREE.SphereGeometry(0.3, 8, 8);
+        for(let i = 0; i < 5; i++) {
+            const foam = new THREE.Mesh(foamGeom, foamMat);
+            foam.position.set((Math.random() - 0.5) * 0.4, 8.0, -1.0 + i * 0.5);
+            leftWaveGroup.add(foam);
+            foamSpheres.push(foam);
+        }
+
+        // 5. Player: Mil Mi-17 military helicopter camo model
+        const helicopter = new THREE.Group();
+
+        // Main Cabin Fuselage (horizontal cylinder)
         const cabinGeom = new THREE.CylinderGeometry(0.5, 0.45, 2.0, 12);
         cabinGeom.rotateZ(Math.PI / 2);
         const cabinMesh = new THREE.Mesh(cabinGeom, camoGreen);
@@ -581,7 +698,7 @@
         cabinMesh.receiveShadow = true;
         helicopter.add(cabinMesh);
 
-        // Camo spot sleeves overlapping the cabin
+        // Camo spot sleeves
         const camoSleeve1 = new THREE.Mesh(new THREE.CylinderGeometry(0.505, 0.485, 0.6, 12), camoDark);
         camoSleeve1.geometry.rotateZ(Math.PI / 2);
         camoSleeve1.position.set(0.3, 0, 0);
@@ -594,7 +711,7 @@
         camoSleeve2.castShadow = true;
         helicopter.add(camoSleeve2);
 
-        // Rounded Nose Cockpit (distorted sphere)
+        // Rounded sloped nose
         const noseGeom = new THREE.SphereGeometry(0.48, 12, 12);
         const noseMesh = new THREE.Mesh(noseGeom, camoGreen);
         noseMesh.scale.set(1.4, 0.9, 1.0);
@@ -602,15 +719,15 @@
         noseMesh.castShadow = true;
         helicopter.add(noseMesh);
 
-        // Cockpit Window glass panel overlay
+        // Glass windshield overlay
         const windowGeom = new THREE.BoxGeometry(0.35, 0.4, 0.75);
         const windowMesh = new THREE.Mesh(windowGeom, glassMat);
         windowMesh.position.set(1.2, 0.15, 0);
-        windowMesh.rotation.z = -0.3; // match nose slope angle
+        windowMesh.rotation.z = -0.3; 
         windowMesh.castShadow = true;
         helicopter.add(windowMesh);
 
-        // Top Engine Housing
+        // Engine housing on top
         const engineGeom = new THREE.CylinderGeometry(0.25, 0.22, 1.3, 10);
         engineGeom.rotateZ(Math.PI / 2);
         const engineMesh = new THREE.Mesh(engineGeom, camoGreen);
@@ -618,7 +735,6 @@
         engineMesh.castShadow = true;
         helicopter.add(engineMesh);
 
-        // Engine camo spot
         const engineCamo = new THREE.Mesh(new THREE.CylinderGeometry(0.255, 0.245, 0.5, 10), camoDark);
         engineCamo.geometry.rotateZ(Math.PI / 2);
         engineCamo.position.set(0.3, 0.55, 0);
@@ -654,7 +770,7 @@
         exhaustR.castShadow = true;
         helicopter.add(exhaustR);
 
-        // Side External Fuel Tanks (low mounted)
+        // Side External Fuel Tanks
         const tankGeom = new THREE.CylinderGeometry(0.13, 0.13, 1.2, 8);
         tankGeom.rotateZ(Math.PI / 2);
 
@@ -668,7 +784,7 @@
         tankR.castShadow = true;
         helicopter.add(tankR);
 
-        // Tail Boom (tapered horizontal cylinder)
+        // Tail Boom
         const boomGeom = new THREE.CylinderGeometry(0.32, 0.08, 2.2, 10);
         boomGeom.rotateZ(Math.PI / 2);
         const boomMesh = new THREE.Mesh(boomGeom, camoGreen);
@@ -676,14 +792,13 @@
         boomMesh.castShadow = true;
         helicopter.add(boomMesh);
 
-        // Tail boom camo detail
         const boomCamo = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.17, 0.7, 10), camoLight);
         boomCamo.geometry.rotateZ(Math.PI / 2);
         boomCamo.position.set(-1.6, 0.2, 0);
         boomCamo.castShadow = true;
         helicopter.add(boomCamo);
 
-        // Vertical tail fin slanted backwards
+        // Vertical tail fin
         const finGeom = new THREE.BoxGeometry(0.25, 0.85, 0.08);
         const finMesh = new THREE.Mesh(finGeom, camoGreen);
         finMesh.position.set(-3.0, 0.72, 0);
@@ -691,11 +806,11 @@
         finMesh.castShadow = true;
         helicopter.add(finMesh);
 
-        // Tricycle Landing Gear Struts & Wheels
+        // Tricycle Landing Gear
         const strutMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3 });
         const wheelMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.9 });
 
-        // Front dual-wheel assembly
+        // Front double-wheel
         const noseStrutGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.5, 6);
         const noseStrut = new THREE.Mesh(noseStrutGeom, strutMat);
         noseStrut.position.set(0.9, -0.6, 0);
@@ -714,7 +829,7 @@
         noseWheelR.castShadow = true;
         helicopter.add(noseWheelR);
 
-        // Rear main wheels & support struts (left/right)
+        // Rear main wheels & struts
         const rearStrutGeom = new THREE.CylinderGeometry(0.025, 0.025, 0.55, 6);
         rearStrutGeom.rotateZ(0.25);
 
@@ -756,7 +871,7 @@
         helicopter.add(mainRotor);
 
         const bladeGeom = new THREE.BoxGeometry(1.8, 0.015, 0.12);
-        bladeGeom.translate(0.9, 0, 0); // translate so origin is at the blade root
+        bladeGeom.translate(0.9, 0, 0); 
 
         for (let i = 0; i < 5; i++) {
             const angle = (i * Math.PI * 2) / 5;
@@ -766,7 +881,7 @@
             mainRotor.add(blade);
         }
 
-        // 3-Blade Tail Rotor (mounted on the vertical tail fin right side)
+        // 3-Blade Tail Rotor (right side Z=0.12 of vertical tail fin)
         const tailRotor = new THREE.Group();
         tailRotor.position.set(-3.0, 0.75, 0.12);
         helicopter.add(tailRotor);
@@ -782,30 +897,30 @@
             tailRotor.add(blade);
         }
 
-        // Spotlight
+        // Spotlight searchlight
         const searchlight = new THREE.SpotLight(0xffffff, 6, 18, Math.PI / 5, 0.5, 1);
         searchlight.position.set(1.1, -0.2, 0);
         searchlight.castShadow = false;
         helicopter.add(searchlight);
 
         const searchlightTarget = new THREE.Object3D();
-        searchlightTarget.position.set(4, -6, 0); // Point forward-downward
+        searchlightTarget.position.set(4, -6, 0); 
         helicopter.add(searchlightTarget);
         searchlight.target = searchlightTarget;
 
         scene.add(helicopter);
 
-        // 4. Procedural Multi-Omini System
+        // 6. Procedural Multi-Omini System
         const ominiArray = [];
 
-        // Omini shared parts
+        // Omini parts
         const legsGeom = new THREE.CylinderGeometry(0.12, 0.12, 0.35, 8);
         const torsoGeom = new THREE.CylinderGeometry(0.15, 0.15, 0.35, 8);
         const headGeom = new THREE.SphereGeometry(0.11, 8, 8);
 
-        const legsMat = new THREE.MeshStandardMaterial({ color: 0x1a3399, roughness: 0.8 }); // pants
-        const torsoMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.7 }); // orange vest
-        const headMat = new THREE.MeshStandardMaterial({ color: 0xffccaa, roughness: 0.8 }); // skin tone
+        const legsMat = new THREE.MeshStandardMaterial({ color: 0x1a3399, roughness: 0.8 }); 
+        const torsoMat = new THREE.MeshStandardMaterial({ color: 0xff5500, roughness: 0.7 }); 
+        const headMat = new THREE.MeshStandardMaterial({ color: 0xffccaa, roughness: 0.8 }); 
 
         function createOminoMesh() {
             const group = new THREE.Group();
@@ -839,7 +954,7 @@
             });
         }
 
-        // 5. Obstacles (Drones and Birds) - Moving relative to scroll speed
+        // 7. Obstacles (Drones and Birds)
         const obstacles = [];
         const obstacleTypes = ['drone', 'bird'];
 
@@ -885,7 +1000,7 @@
                 group.userData = { rotors: rotors, type: 'drone' };
             } else {
                 const bodyGeom = new THREE.CylinderGeometry(0, 0.2, 0.7, 6);
-                bodyGeom.rotateZ(Math.PI / 2); // face left towards player
+                bodyGeom.rotateZ(Math.PI / 2); // face left
                 const bodyMat = new THREE.MeshStandardMaterial({ color: 0xdd2222, roughness: 0.7 });
                 const bodyMesh = new THREE.Mesh(bodyGeom, bodyMat);
                 bodyMesh.castShadow = true;
@@ -919,11 +1034,10 @@
             obs.mesh = buildObstacleMesh(type);
             obs.type = type;
 
-            const xPos = 16.0; // always spawn ahead of player
+            const xPos = 16.0; 
             const yPos = 3.5 + Math.random() * 4.0;
             obs.mesh.position.set(xPos, yPos, 0);
 
-            // Speed scales up with score
             const diffMultiplier = 1.0 + score * 0.09;
             obs.flightSpeed = (2.5 + Math.random() * 2.0) * diffMultiplier;
         }
@@ -942,7 +1056,47 @@
             }
         }
 
-        // 6. Rescue Particles
+        // 8. Dynamic Wave Spray Particles
+        const waveSprayParticles = [];
+
+        function spawnWaveSprayParticle() {
+            const p = new THREE.Mesh(
+                new THREE.BoxGeometry(0.1, 0.1, 0.1),
+                new THREE.MeshBasicMaterial({ color: 0xffffff })
+            );
+            // Spawn at the top of the wave (X of wave, Y of wave crest)
+            const splashY = 4.0 * currentWaveScaleY + 4.0;
+            p.position.set(currentWaveX + 0.5, splashY + (Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 1.5);
+            scene.add(p);
+
+            waveSprayParticles.push({
+                mesh: p,
+                vx: 4.0 + Math.random() * 3.0, // shoot right
+                vy: 1.0 + Math.random() * 2.0, // splash up
+                vz: (Math.random() - 0.5) * 1.5,
+                life: 0.8
+            });
+        }
+
+        function updateWaveSpray(dt) {
+            for(let i = waveSprayParticles.length - 1; i >= 0; i--) {
+                const p = waveSprayParticles[i];
+                p.mesh.position.x += p.vx * dt;
+                p.mesh.position.y += p.vy * dt;
+                p.mesh.position.z += p.vz * dt;
+
+                p.vy -= 9.8 * dt; // gravity pulls down
+                p.life -= dt;
+                p.mesh.scale.setScalar(Math.max(0, p.life / 0.8));
+
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    waveSprayParticles.splice(i, 1);
+                }
+            }
+        }
+
+        // 9. Rescue Particles
         const rescueParticles = [];
 
         function triggerRescueParticles(x, y) {
@@ -1072,6 +1226,18 @@
             invincibilityTimer = 0;
             helicopter.visible = true;
 
+            // Surge logic reset
+            isSurging = false;
+            surgeCycleTimer = 0.0;
+            surgeActiveTimer = 0.0;
+            targetWaterYOffset = 0.0;
+            currentWaterYOffset = 0.0;
+            targetWaveX = -13.0;
+            currentWaveX = -13.0;
+            targetWaveScaleY = 0.5;
+            currentWaveScaleY = 0.5;
+            document.getElementById('nepal-flood-warning').style.display = 'none';
+
             // Reset heli vertical position and angles
             helicopterY = 7.5;
             verticalVelocity = 0;
@@ -1088,6 +1254,9 @@
             // Clear old particles & targets
             rescueParticles.forEach(p => scene.remove(p.mesh));
             rescueParticles.length = 0;
+
+            waveSprayParticles.forEach(p => scene.remove(p.mesh));
+            waveSprayParticles.length = 0;
 
             ominiArray.forEach(o => scene.remove(o.mesh));
             ominiArray.length = 0;
@@ -1116,6 +1285,7 @@
             currentScrollSpeed = 0.0;
             Sound.stopMotor();
             Sound.playGameOver();
+            document.getElementById('nepal-flood-warning').style.display = 'none';
             
             // Save and check HighScore
             if (score > highScore) {
@@ -1154,9 +1324,21 @@
             const dt = Math.min(clock.getDelta(), 0.1); 
             const time = clock.getElapsedTime();
 
-            // 1. Water waves animation (Always run)
-            waterMesh.position.y = -0.25 + Math.sin(time * 1.7) * 0.16;
+            // 1. Water waves animation & Surge offsets
+            currentWaterYOffset = THREE.MathUtils.lerp(currentWaterYOffset, targetWaterYOffset, 0.05);
+            waterMesh.position.y = -0.25 + currentWaterYOffset + Math.sin(time * 1.7) * 0.16;
             waterMesh.rotation.z = Math.sin(time * 0.8) * 0.012;
+
+            // 2. Wave shape updates & Foam spheres rotation
+            currentWaveX = THREE.MathUtils.lerp(currentWaveX, targetWaveX, 0.05);
+            currentWaveScaleY = THREE.MathUtils.lerp(currentWaveScaleY, targetWaveScaleY, 0.05);
+            leftWaveGroup.position.x = currentWaveX;
+            leftWaveGroup.scale.y = currentWaveScaleY;
+
+            foamSpheres.forEach((f, idx) => {
+                f.rotation.y += 0.02 * (idx + 1);
+                f.position.y = 8.0 + Math.sin(time * 4.0 + idx) * 0.08;
+            });
 
             // Rotors update
             mainRotor.rotation.y += mainRotorSpeed;
@@ -1164,6 +1346,7 @@
 
             // Particles update
             updateRescueParticles(dt);
+            updateWaveSpray(dt);
 
             if (gameState === 'START') {
                 // Helicopter hovering in place on the left side
@@ -1176,13 +1359,20 @@
 
                 // Slowly scroll background terrain
                 terrainBlocks.forEach(block => {
-                    block.x -= 1.0 * dt; // slow scroll
+                    block.x -= 1.0 * dt; 
                     if (block.x < -18.0) {
                         const rightmostX = terrainBlocks[terrainBlocks.length - 1].x;
                         block.x = rightmostX + blockWidth;
                     }
                     block.dirtMesh.position.x = block.x;
                     block.grassMesh.position.x = block.x;
+                });
+
+                // Slowly scroll background mountains (parallax)
+                backgroundMountains.forEach(m => {
+                    m.x -= 1.0 * m.speedFactor * dt;
+                    if(m.x < -24.0) m.x = 24.0;
+                    m.mesh.position.x = m.x;
                 });
 
             } else if (gameState === 'PLAYING') {
@@ -1199,6 +1389,50 @@
                 distanceTraveled += currentScrollSpeed * dt;
                 document.getElementById('nepal-flood-distance').innerText = `${Math.floor(distanceTraveled)} m`;
 
+                // --- PROCEDURAL FLOOD SURGE TRIGGER ---
+                if (!isSurging) {
+                    surgeCycleTimer += dt;
+                    if (surgeCycleTimer >= 15.0) { // Every 15s, triggers a surge
+                        isSurging = true;
+                        surgeActiveTimer = 5.0; // surge lasts 5s
+                        Sound.playSiren();
+                        document.getElementById('nepal-flood-warning').style.display = 'block';
+                    }
+                } else {
+                    surgeActiveTimer -= dt;
+                    if (surgeActiveTimer <= 0) {
+                        isSurging = false;
+                        surgeCycleTimer = 0.0;
+                        document.getElementById('nepal-flood-warning').style.display = 'none';
+                    }
+                }
+
+                // Smoothly modulate target values based on surge state
+                if (isSurging) {
+                    targetWaterYOffset = 1.0;     // Water level rises 1 unit
+                    targetWaveX = -9.0;           // Wave moves forward
+                    targetWaveScaleY = 1.6;       // Wave swells
+                    
+                    // Foam spray particles active
+                    if (Math.random() < 0.45) {
+                        spawnWaveSprayParticle();
+                    }
+
+                    // Interpolate fog and light to storm dark shades
+                    scene.fog.color.lerp(stormSkyColor, 0.05);
+                    renderer.setClearColor(scene.fog.color, 1);
+                    dirLight.color.lerp(stormLightColor, 0.05);
+                } else {
+                    targetWaterYOffset = 0.0;
+                    targetWaveX = -13.0;
+                    targetWaveScaleY = 0.5;
+
+                    // Interpolate fog and light back to base shades
+                    scene.fog.color.lerp(baseSkyColor, 0.05);
+                    renderer.setClearColor(scene.fog.color, 1);
+                    dirLight.color.lerp(baseLightColor, 0.05);
+                }
+
                 // SCROLL INFINITE TERRAIN
                 terrainBlocks.forEach(block => {
                     block.x -= currentScrollSpeed * dt;
@@ -1212,7 +1446,6 @@
                     const rightmostX = terrainBlocks[terrainBlocks.length - 1].x;
                     const newX = rightmostX + blockWidth;
 
-                    // Generate new height based on deterministic-looking noise
                     terrainCounter++;
                     const newDirtHeight = 1.2 + Math.sin(terrainCounter * 0.7) * 0.8 + Math.random() * 0.4;
                     
@@ -1231,6 +1464,15 @@
                         spawnOminoOnBlock(block);
                     }
                 }
+
+                // SCROLL PARALLAX MOUNTAINS
+                backgroundMountains.forEach(m => {
+                    m.x -= currentScrollSpeed * m.speedFactor * dt;
+                    if (m.x < -24.0) {
+                        m.x = 24.0;
+                    }
+                    m.mesh.position.x = m.x;
+                });
 
                 // UPDATE PROCEDURAL OMINI
                 for (let i = ominiArray.length - 1; i >= 0; i--) {
@@ -1262,7 +1504,7 @@
                 helicopterY += verticalVelocity * dt;
                 helicopterY = THREE.MathUtils.clamp(helicopterY, minY, maxY);
 
-                // Slight hover oscillation on X, keep X mostly fixed at -5
+                // Hover oscillation
                 const hoverOffset = Math.sin(time * 2.5) * 0.1;
                 helicopter.position.set(helicopterX + hoverOffset, helicopterY, 0);
 
@@ -1273,7 +1515,7 @@
                 const targetTilt = -verticalVelocity * 0.035;
                 helicopter.rotation.z = THREE.MathUtils.lerp(helicopter.rotation.z, targetTilt, 0.2);
 
-                // Headlight points forward-downward
+                // Headlight searchlight target offset
                 searchlightTarget.position.y = -6.0 - verticalVelocity * 0.1;
 
                 // INVINCIBILITY VISUAL FLASH
@@ -1288,7 +1530,7 @@
                     }
                 }
 
-                // UPDATE FLYING OBSTACLES (Speed combined with scroll speed)
+                // UPDATE FLYING OBSTACLES (relative to scroll speed)
                 obstacles.forEach(obs => {
                     const totalVx = -(currentScrollSpeed + obs.flightSpeed);
                     obs.mesh.position.x += totalVx * dt;
@@ -1323,12 +1565,19 @@
                     const oBox = new THREE.Box3().setFromObject(o.mesh);
 
                     if (heliBox.intersectsBox(oBox)) {
-                        // Rescued successfully!
-                        score += 1;
-                        timer += 3.0;
+                        // Double reward score & time during active surges
+                        const pointVal = isSurging ? 2 : 1;
+                        const timeVal = isSurging ? 4.0 : 3.0;
+
+                        score += pointVal;
+                        timer += timeVal;
                         document.getElementById('nepal-flood-score').innerText = String(score).padStart(3, '0');
 
-                        createWorldToast('+3s RESCUE', '#00ff66', o.x, o.y + 1.2);
+                        // Custom floating toast feedback
+                        const toastColor = isSurging ? '#ffcc00' : '#00ff66';
+                        const toastText = isSurging ? `+${timeVal}s RESCUE (X2!)` : `+${timeVal}s RESCUE`;
+
+                        createWorldToast(toastText, toastColor, o.x, o.y + 1.2);
                         triggerRescueParticles(o.x, o.y + 0.3);
 
                         Sound.playRescue();
@@ -1369,6 +1618,30 @@
                             // Recycle hit obstacle
                             spawnObstacle(obs);
                             break;
+                        }
+                    }
+                }
+
+                // C. Left Wave Hazard collision check (only active during surge)
+                if (isSurging && !isInvincible) {
+                    leftWaveGroup.updateMatrixWorld(true);
+                    const waveBox = new THREE.Box3().setFromObject(waveBodyMesh);
+
+                    if (heliBox.intersectsBox(waveBox)) {
+                        // Engulfed by left wave
+                        timer -= 3.0;
+                        if (timer < 0) timer = 0;
+                        document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
+
+                        isInvincible = true;
+                        invincibilityTimer = 1.2;
+
+                        triggerScreenFlash();
+                        createWorldToast('-3s WAVE HIT', '#ff3333', helicopterX, helicopterY);
+
+                        Sound.playDamage();
+                        if (navigator.vibrate) {
+                            navigator.vibrate([80, 50, 80]);
                         }
                     }
                 }
