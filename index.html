@@ -1018,69 +1018,204 @@
         // 7. Obstacles (Drones and Birds)
         const obstacles = [];
         const obstacleTypes = ['drone', 'bird'];
-
         function buildObstacleMesh(type) {
             const group = new THREE.Group();
             
             if (type === 'drone') {
-                const bodyGeom = new THREE.BoxGeometry(0.65, 0.22, 0.65);
-                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.5, metalness: 0.7 });
-                const bodyMesh = new THREE.Mesh(bodyGeom, bodyMat);
-                bodyMesh.castShadow = true;
-                group.add(bodyMesh);
+                // 1. Sleek Central Body (gray DJI chassis)
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8a9296, roughness: 0.45, metalness: 0.5 });
+                const chassisGeom = new THREE.BoxGeometry(0.55, 0.16, 0.25);
+                const chassis = new THREE.Mesh(chassisGeom, bodyMat);
+                chassis.castShadow = true;
+                group.add(chassis);
 
-                const armGeom = new THREE.BoxGeometry(0.85, 0.04, 0.08);
-                const armMat = new THREE.MeshStandardMaterial({ color: 0x2b2b2b });
+                const noseGeom = new THREE.BoxGeometry(0.18, 0.12, 0.22);
+                const nose = new THREE.Mesh(noseGeom, bodyMat);
+                nose.position.set(0.3, -0.02, 0);
+                nose.rotation.z = -0.15; // sloped nose
+                group.add(nose);
+
+                // 2. Camera Gimbal (dual lenses, black)
+                const gimbalMat = new THREE.MeshStandardMaterial({ color: 0x181818, roughness: 0.3 });
+                const gimbalGeom = new THREE.BoxGeometry(0.15, 0.15, 0.15);
+                const gimbal = new THREE.Mesh(gimbalGeom, gimbalMat);
+                gimbal.position.set(0.28, -0.15, 0);
+                group.add(gimbal);
+
+                const lensGeom = new THREE.CylinderGeometry(0.04, 0.04, 0.05, 8);
+                lensGeom.rotateZ(Math.PI / 2);
+                const glassMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.05, metalness: 0.9 });
                 
-                const arm1 = new THREE.Mesh(armGeom, armMat);
-                arm1.rotation.y = Math.PI / 4;
-                group.add(arm1);
+                const lensTop = new THREE.Mesh(lensGeom, glassMat);
+                lensTop.position.set(0.35, -0.12, 0.04);
+                group.add(lensTop);
 
-                const arm2 = new THREE.Mesh(armGeom, armMat);
-                arm2.rotation.y = -Math.PI / 4;
-                group.add(arm2);
+                const lensBottom = new THREE.Mesh(lensGeom, glassMat);
+                lensBottom.position.set(0.35, -0.18, -0.04);
+                group.add(lensBottom);
 
-                const rotGeom = new THREE.BoxGeometry(0.32, 0.01, 0.04);
-                const rotMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
-                const rotors = [];
+                // 3. Diagonal Arms (slanted, gray)
+                const armMat = new THREE.MeshStandardMaterial({ color: 0x788084, roughness: 0.5 });
+                const armGeom = new THREE.CylinderGeometry(0.025, 0.025, 0.45, 6);
+                armGeom.rotateX(Math.PI / 2);
 
-                const offsets = [
-                    { x: 0.3, z: 0.3 },
-                    { x: -0.3, z: 0.3 },
-                    { x: 0.3, z: -0.3 },
-                    { x: -0.3, z: -0.3 }
+                const armFL = new THREE.Mesh(armGeom, armMat);
+                armFL.position.set(0.15, -0.02, 0.22);
+                armFL.rotation.y = 0.6; // angle forward-outward
+                group.add(armFL);
+
+                const armFR = new THREE.Mesh(armGeom, armMat);
+                armFR.position.set(0.15, -0.02, -0.22);
+                armFR.rotation.y = -0.6;
+                group.add(armFR);
+
+                const armRL = new THREE.Mesh(armGeom, armMat);
+                armRL.position.set(-0.15, -0.04, 0.20);
+                armRL.rotation.y = -0.7; // angle backward-outward
+                group.add(armRL);
+
+                const armRR = new THREE.Mesh(armGeom, armMat);
+                armRR.position.set(-0.15, -0.04, -0.20);
+                armRR.rotation.y = 0.7;
+                group.add(armRR);
+
+                // 4. Motors and Propellers (Rotors) with orange tips
+                const motorMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                const motorGeom = new THREE.CylinderGeometry(0.04, 0.04, 0.06, 6);
+                const propGeom = new THREE.BoxGeometry(0.32, 0.008, 0.035);
+                
+                // Orange tips for props
+                const tipMat = new THREE.MeshBasicMaterial({ color: 0xff7700 });
+                const tipGeom = new THREE.BoxGeometry(0.06, 0.01, 0.036);
+
+                const motorPositions = [
+                    { x: 0.28, y: 0.0, z: 0.38 },   // Front Left
+                    { x: 0.28, y: 0.0, z: -0.38 },  // Front Right
+                    { x: -0.28, y: -0.02, z: 0.34 }, // Rear Left
+                    { x: -0.28, y: -0.02, z: -0.34 } // Rear Right
                 ];
 
-                offsets.forEach(off => {
-                    const rot = new THREE.Mesh(rotGeom, rotMat);
-                    rot.position.set(off.x, 0.08, off.z);
-                    group.add(rot);
-                    rotors.push(rot);
+                const rotors = [];
+                motorPositions.forEach(pos => {
+                    // Motor
+                    const motor = new THREE.Mesh(motorGeom, motorMat);
+                    motor.position.set(pos.x, pos.y, pos.z);
+                    group.add(motor);
+
+                    // Propeller Group
+                    const propGroup = new THREE.Group();
+                    propGroup.position.set(pos.x, pos.y + 0.04, pos.z);
+                    
+                    const propBlade = new THREE.Mesh(propGeom, motorMat);
+                    propGroup.add(propBlade);
+
+                    // Add orange tips at prop ends
+                    const tipL = new THREE.Mesh(tipGeom, tipMat);
+                    tipL.position.set(0.14, 0, 0);
+                    propGroup.add(tipL);
+
+                    const tipR = new THREE.Mesh(tipGeom, tipMat);
+                    tipR.position.set(-0.14, 0, 0);
+                    propGroup.add(tipR);
+
+                    group.add(propGroup);
+                    rotors.push(propGroup);
                 });
 
                 group.userData = { rotors: rotors, type: 'drone' };
+
             } else {
-                const bodyGeom = new THREE.CylinderGeometry(0, 0.2, 0.7, 6);
-                bodyGeom.rotateZ(Math.PI / 2); // face left
-                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xdd2222, roughness: 0.7 });
-                const bodyMesh = new THREE.Mesh(bodyGeom, bodyMat);
-                bodyMesh.castShadow = true;
-                group.add(bodyMesh);
+                // Pelican Bird Model
+                const feathersDark = new THREE.MeshStandardMaterial({ color: 0x464e54, roughness: 0.9 }); // slate dark body
+                const feathersWhite = new THREE.MeshStandardMaterial({ color: 0xe8e8e8, roughness: 0.95 }); // white neck
+                const headYellow = new THREE.MeshStandardMaterial({ color: 0xebd25b, roughness: 0.9 }); // yellow head
+                const beakOrange = new THREE.MeshStandardMaterial({ color: 0xeb883b, roughness: 0.8 }); // orange beak
 
-                const wingGeom = new THREE.BoxGeometry(0.12, 0.02, 0.5);
-                const wingMat = new THREE.MeshStandardMaterial({ color: 0xaa1111 });
-                
-                const wingL = new THREE.Mesh(wingGeom, wingMat);
-                wingL.position.set(0.1, 0.05, 0.25);
-                group.add(wingL);
+                // 1. Aerodynamic slate body (non-uniform sphere)
+                const bodyGeom = new THREE.SphereGeometry(0.35, 12, 12);
+                const body = new THREE.Mesh(bodyGeom, feathersDark);
+                body.scale.set(1.6, 0.8, 0.9);
+                body.castShadow = true;
+                group.add(body);
 
-                const wingR = new THREE.Mesh(wingGeom, wingMat);
-                wingR.position.set(0.1, 0.05, -0.25);
-                group.add(wingR);
+                // 2. White neck (curved forward)
+                const neckGeom = new THREE.CylinderGeometry(0.1, 0.14, 0.4, 8);
+                neckGeom.rotateZ(-0.4); // tilt forward
+                const neck = new THREE.Mesh(neckGeom, feathersWhite);
+                neck.position.set(0.48, 0.22, 0);
+                neck.castShadow = true;
+                group.add(neck);
 
-                group.userData = { wingL: wingL, wingR: wingR, type: 'bird' };
+                // 3. Head & Long Beak
+                const headGeom = new THREE.SphereGeometry(0.13, 8, 8);
+                const head = new THREE.Mesh(headGeom, headYellow);
+                head.position.set(0.64, 0.38, 0);
+                head.castShadow = true;
+                group.add(head);
+
+                // Long Beak pointed forward-down
+                const beakGeom = new THREE.ConeGeometry(0.07, 0.75, 5);
+                beakGeom.rotateZ(-1.2); // point forward-down
+                beakGeom.translate(0.3, -0.15, 0);
+                const beak = new THREE.Mesh(beakGeom, beakOrange);
+                beak.position.set(0.64, 0.38, 0);
+                beak.castShadow = true;
+                group.add(beak);
+
+                // 4. Large Segmented Flapping Wings
+                const wingGeomInner = new THREE.BoxGeometry(0.35, 0.02, 0.6);
+                wingGeomInner.translate(0, 0, 0.3); // offset pivot
+                const wingGeomOuter = new THREE.BoxGeometry(0.28, 0.015, 0.75);
+                wingGeomOuter.translate(0, 0.02, 0.375); // offset pivot
+
+                // Left Wing Group
+                const wingLGroup = new THREE.Group();
+                wingLGroup.position.set(0.0, 0.15, 0.15);
+
+                const innerL = new THREE.Mesh(wingGeomInner, feathersDark);
+                wingLGroup.add(innerL);
+
+                const outerL = new THREE.Mesh(wingGeomOuter, feathersDark);
+                outerL.position.set(0, 0, 0.6); // at the end of inner wing
+                outerL.rotation.x = 0.25; // slight dihedral fold
+                wingLGroup.add(outerL);
+
+                group.add(wingLGroup);
+
+                // Right Wing Group
+                const wingRGroup = new THREE.Group();
+                wingRGroup.position.set(0.0, 0.15, -0.15);
+
+                const innerR = new THREE.Mesh(wingGeomInner, feathersDark);
+                innerR.rotation.y = Math.PI; // mirror
+                wingRGroup.add(innerR);
+
+                const outerR = new THREE.Mesh(wingGeomOuter, feathersDark);
+                outerR.position.set(0, 0, -0.6);
+                outerR.rotation.x = -0.25;
+                outerR.rotation.y = Math.PI;
+                wingRGroup.add(outerR);
+
+                group.add(wingRGroup);
+
+                // Tiny tail feathers
+                const tailGeom = new THREE.BoxGeometry(0.25, 0.04, 0.35);
+                const tail = new THREE.Mesh(tailGeom, feathersDark);
+                tail.position.set(-0.62, 0.1, 0);
+                tail.rotation.z = 0.2;
+                group.add(tail);
+
+                group.userData = { 
+                    wingL: wingLGroup, 
+                    wingR: wingRGroup, 
+                    innerL: innerL,
+                    outerL: outerL,
+                    innerR: innerR,
+                    outerR: outerR,
+                    type: 'bird' 
+                };
             }
-
+            
             scene.add(group);
             return group;
         }
