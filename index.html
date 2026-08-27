@@ -363,6 +363,7 @@
 
         // Progressive Stages variables
         let gameElapsedTime = 0.0;
+        let rescueStreak = 0;
         let currentStage = 1;
         let prevStage = 1;
         
@@ -704,14 +705,14 @@
             terrainCounter = i;
         }
 
-        // 3. Global Flood Water
+        // 3. Global Muddy Flood Water
         const waterGeom = new THREE.BoxGeometry(40, 4.5, 6);
         const waterMat = new THREE.MeshStandardMaterial({
-            color: 0x0055ff,
+            color: 0x4a3e31, // Murky brownish mud silt color
             transparent: true,
-            opacity: 0.65,
-            roughness: 0.15,
-            metalness: 0.1,
+            opacity: 0.85,    // thick, turbid water
+            roughness: 0.65,
+            metalness: 0.05,
             flatShading: true
         });
         const waterMesh = new THREE.Mesh(waterGeom, waterMat);
@@ -722,21 +723,24 @@
         // 4. The Left Wave (Flood Surge / Onda di Piena)
         const leftWaveGroup = new THREE.Group();
         leftWaveGroup.position.set(currentWaveX, 0, 0);
+        leftWaveGroup.rotation.z = -0.32; // Tilt forward to look like a breaking tidal wave!
         scene.add(leftWaveGroup);
 
-        const waveBodyGeom = new THREE.CylinderGeometry(0.8, 1.3, 8.0, 10);
+        // Horizontal cylinder barrel segment representing rolling water front
+        const waveBodyGeom = new THREE.CylinderGeometry(1.6, 0.5, 8.0, 12);
+        waveBodyGeom.rotateX(Math.PI / 2); // align sideways along Z
         const waveBodyMesh = new THREE.Mesh(waveBodyGeom, waterMat);
-        waveBodyMesh.position.set(0, 4.0, 0);
+        waveBodyMesh.position.set(0, 3.5, 0);
         waveBodyMesh.receiveShadow = true;
         leftWaveGroup.add(waveBodyMesh);
 
-        // Foam crest spheres
+        // Foam crest spheres (dirty churning clay/whitewater foam)
         const foamSpheres = [];
-        const foamMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const foamGeom = new THREE.SphereGeometry(0.3, 8, 8);
-        for(let i = 0; i < 5; i++) {
+        const foamMat = new THREE.MeshBasicMaterial({ color: 0xe5d2b3 }); // dirty cream/tan foam
+        const foamGeom = new THREE.SphereGeometry(0.52, 8, 8);
+        for(let i = 0; i < 9; i++) {
             const foam = new THREE.Mesh(foamGeom, foamMat);
-            foam.position.set((Math.random() - 0.5) * 0.4, 8.0, -1.0 + i * 0.5);
+            foam.position.set(0.3, 4.6, -2.0 + i * 0.5);
             leftWaveGroup.add(foam);
             foamSpheres.push(foam);
         }
@@ -1015,6 +1019,45 @@
             });
         }
 
+        // 6.5 Procedural Fuel Canisters System
+        const fuelCansArray = [];
+        const fuelCanGeom = new THREE.BoxGeometry(0.24, 0.35, 0.16);
+        const fuelCanMat = new THREE.MeshStandardMaterial({ color: 0xdd2222, roughness: 0.5 }); // Red Jerrycan
+        const capGeom = new THREE.CylinderGeometry(0.04, 0.04, 0.08, 6);
+        const handleGeom = new THREE.BoxGeometry(0.02, 0.08, 0.1);
+
+        function createFuelCanMesh() {
+            const group = new THREE.Group();
+            
+            const body = new THREE.Mesh(fuelCanGeom, fuelCanMat);
+            body.position.set(0, 0.175, 0); // rest on block top
+            body.castShadow = true;
+            group.add(body);
+            
+            const cap = new THREE.Mesh(capGeom, metalDark);
+            cap.position.set(0.06, 0.375, 0);
+            cap.castShadow = true;
+            group.add(cap);
+            
+            const handle = new THREE.Mesh(handleGeom, metalDark);
+            handle.position.set(0, 0.38, 0);
+            handle.castShadow = true;
+            group.add(handle);
+            
+            scene.add(group);
+            return group;
+        }
+
+        function spawnFuelCanOnBlock(block) {
+            const mesh = createFuelCanMesh();
+            mesh.position.set(block.x, block.topHeight, 0);
+            fuelCansArray.push({
+                mesh: mesh,
+                x: block.x,
+                y: block.topHeight
+            });
+        }
+
         // 7. Obstacles (Drones and Birds)
         const obstacles = [];
         const obstacleTypes = ['drone', 'bird'];
@@ -1255,11 +1298,13 @@
         const waveSprayParticles = [];
 
         function spawnWaveSprayParticle() {
+            const colors = [0xffffff, 0xe5d2b3, 0x8a7258, 0x7a634c];
+            const randColor = colors[Math.floor(Math.random() * colors.length)];
             const p = new THREE.Mesh(
-                new THREE.BoxGeometry(0.1, 0.1, 0.1),
-                new THREE.MeshBasicMaterial({ color: 0xffffff })
+                new THREE.BoxGeometry(0.08 + Math.random() * 0.05, 0.08 + Math.random() * 0.05, 0.08 + Math.random() * 0.05),
+                new THREE.MeshBasicMaterial({ color: randColor })
             );
-            const splashY = 4.0 * currentWaveScaleY + 4.0;
+            const splashY = 3.5 * currentWaveScaleY + 1.2;
             p.position.set(currentWaveX + 0.5, splashY + (Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 1.5);
             scene.add(p);
 
@@ -1509,6 +1554,7 @@
 
             // Stages & Hazards reset
             gameElapsedTime = 0.0;
+            rescueStreak = 0;
             currentStage = 1;
             prevStage = 1;
             rockSpawnTimer = 0.0;
@@ -1518,6 +1564,9 @@
             
             waterSplashParticles.forEach(p => scene.remove(p.mesh));
             waterSplashParticles.length = 0;
+
+            fuelCansArray.forEach(c => scene.remove(c.mesh));
+            fuelCansArray.length = 0;
 
             document.getElementById('nepal-flood-stage-banner').style.display = 'none';
 
@@ -1596,7 +1645,7 @@
 
             // Update UI elements
             document.getElementById('nepal-flood-score').innerText = '000';
-            document.getElementById('nepal-flood-timer').innerText = '30.0';
+            document.getElementById('nepal-flood-timer').innerText = '59.0';
             document.getElementById('nepal-flood-distance').innerText = '0 m';
             
             document.getElementById('nepal-flood-start').style.display = 'none';
@@ -1662,8 +1711,10 @@
             leftWaveGroup.scale.y = currentWaveScaleY;
 
             foamSpheres.forEach((f, idx) => {
-                f.rotation.y += 0.02 * (idx + 1);
-                f.position.y = 8.0 + Math.sin(time * 4.0 + idx) * 0.08;
+                f.rotation.x += (1.5 + idx * 0.2) * dt;
+                f.rotation.y += (1.0 + idx * 0.1) * dt;
+                f.position.y = 4.6 + Math.sin(time * 6.0 + idx) * 0.12;
+                f.position.x = 0.3 + Math.cos(time * 5.0 + idx) * 0.08;
             });
 
             // Rotors update
@@ -1720,9 +1771,9 @@
                 const heliRescueBox = new THREE.Box3().setFromCenterAndSize(rescueCenter, rescueSize);
 
                 // STAGE PROGRESSION & ANNOUNCEMENTS
-                if (distanceTraveled < 600) {
+                if (distanceTraveled < 300) {
                     currentStage = 1;
-                } else if (distanceTraveled < 1300) {
+                } else if (distanceTraveled < 800) {
                     currentStage = 2;
                 } else {
                     currentStage = 3;
@@ -1892,8 +1943,13 @@
                     terrainBlocks.push(block);
 
                     // Chance to spawn omino on the newly recycled block
+                    let spawnedItem = false;
                     if (Math.random() < 0.18 && ominiArray.length < 3) {
                         spawnOminoOnBlock(block);
+                        spawnedItem = true;
+                    }
+                    if (!spawnedItem && Math.random() < 0.12 && fuelCansArray.length < 2) {
+                        spawnFuelCanOnBlock(block);
                     }
                 }
 
@@ -1920,6 +1976,41 @@
                     if (o.x < -16.0) {
                         scene.remove(o.mesh);
                         ominiArray.splice(i, 1);
+                    }
+                }
+
+                // UPDATE PROCEDURAL FUEL CANS
+                for (let i = fuelCansArray.length - 1; i >= 0; i--) {
+                    const c = fuelCansArray[i];
+                    c.x -= currentScrollSpeed * dt;
+                    
+                    // Bobbing and spinning animation
+                    const bob = Math.sin(time * 5.0 + c.x) * 0.08;
+                    c.mesh.position.set(c.x, c.y + 0.1 + bob, 0);
+                    c.mesh.rotation.y += 2.0 * dt;
+                    
+                    // Remove if scrolled off-screen left
+                    if (c.x < -16.0) {
+                        scene.remove(c.mesh);
+                        fuelCansArray.splice(i, 1);
+                        continue;
+                    }
+                    
+                    // Collision check
+                    c.mesh.updateMatrixWorld(true);
+                    const canBox = new THREE.Box3().setFromObject(c.mesh);
+                    if (heliRescueBox.intersectsBox(canBox)) {
+                        // Refill timer by +5.0 seconds
+                        timer += 5.0;
+                        createWorldToast('+5s FUEL', '#00ffcc', c.x, c.y + 1.2);
+                        
+                        Sound.playRescue(); 
+                        if (navigator.vibrate) {
+                            navigator.vibrate(25);
+                        }
+                        
+                        scene.remove(c.mesh);
+                        fuelCansArray.splice(i, 1);
                     }
                 }
 
@@ -2037,6 +2128,7 @@
                         if (heliHazardBox.intersectsBox(rockBox)) {
                             timer -= 3.0;
                             if (timer < 0) timer = 0;
+                            rescueStreak = 0;
                             document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
 
                             isInvincible = true;
@@ -2077,19 +2169,38 @@
 
                     if (heliRescueBox.intersectsBox(oBox)) {
                         // Double reward score & time during active surges
+                        rescueStreak++;
                         const pointVal = isSurging ? 2 : 1;
-                        const timeVal = isSurging ? 4.0 : 3.0;
+                        let timeVal = isSurging ? 4.0 : 3.0;
+                        
+                        // Early game bonus: +2s extra during the first 25 seconds of gameplay
+                        const isEarlyBonus = (gameElapsedTime < 25.0);
+                        if (isEarlyBonus) {
+                            timeVal += 2.0;
+                        }
+
+                        const isStreakBonus = (rescueStreak % 3 === 0);
 
                         score += pointVal;
                         timer += timeVal;
+                        if (isStreakBonus) {
+                            timer += 5.0;
+                        }
                         document.getElementById('nepal-flood-score').innerText = String(score).padStart(3, '0');
 
                         // Custom floating toast feedback
                         const toastColor = isSurging ? '#ffcc00' : '#00ff66';
-                        const toastText = isSurging ? `+${timeVal}s RESCUE (X2!)` : `+${timeVal}s RESCUE`;
+                        let toastText = isSurging ? `+${timeVal.toFixed(0)}s RESCUE (X2!)` : `+${timeVal.toFixed(0)}s RESCUE`;
+                        if (isEarlyBonus) {
+                            toastText = isSurging ? `+${timeVal.toFixed(0)}s EARLY BONUS (X2!)` : `+${timeVal.toFixed(0)}s EARLY BONUS`;
+                        }
 
                         createWorldToast(toastText, toastColor, o.x, o.y + 1.2);
                         triggerRescueParticles(o.x, o.y + 0.3);
+
+                        if (isStreakBonus) {
+                            createWorldToast(`STREAK BONUS! +5s`, '#ffaa00', o.x, o.y + 2.0);
+                        }
 
                         Sound.playRescue();
                         if (navigator.vibrate) {
@@ -2113,6 +2224,7 @@
                             // Hit obstacle
                             timer -= 3.0;
                             if (timer < 0) timer = 0;
+                            rescueStreak = 0;
                             document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
 
                             isInvincible = true;
@@ -2151,6 +2263,7 @@
                     if (hitTerrain) {
                         timer -= 3.0; 
                         if (timer < 0) timer = 0;
+                        rescueStreak = 0;
                         document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
 
                         isInvincible = true;
@@ -2187,6 +2300,7 @@
                     if (hitCeiling) {
                         timer -= 3.0; 
                         if (timer < 0) timer = 0;
+                        rescueStreak = 0;
                         document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
 
                         isInvincible = true;
@@ -2214,6 +2328,7 @@
                         // Engulfed by left wave
                         timer -= 3.0;
                         if (timer < 0) timer = 0;
+                        rescueStreak = 0;
                         document.getElementById('nepal-flood-timer').innerText = timer.toFixed(1);
 
                         isInvincible = true;
