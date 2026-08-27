@@ -1228,7 +1228,7 @@
 
         // Exhaust Fire/Smoke Particles
         const exhaustParticles = [];
-        const exhaustGeom = new THREE.BoxGeometry(0.06, 0.06, 0.06);
+        const exhaustParticleGeom = new THREE.BoxGeometry(0.06, 0.06, 0.06);
 
         function spawnExhaustParticle(zOffset) {
             const isSmoke = Math.random() < 0.6;
@@ -1238,7 +1238,7 @@
                 transparent: true,
                 opacity: isSmoke ? 0.4 : 0.8
             });
-            const mesh = new THREE.Mesh(exhaustGeom, mat);
+            const mesh = new THREE.Mesh(exhaustParticleGeom, mat);
             const px = helicopter.position.x - 1.0;
             const py = helicopter.position.y + 0.4 + (Math.random() - 0.5) * 0.15;
             mesh.position.set(px, py, zOffset + (Math.random() - 0.5) * 0.08);
